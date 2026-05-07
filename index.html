@@ -5375,7 +5375,18 @@ function nextContact(lead){
   if(diff<0)return{text,cls:'chip-nc-red'};
   return{text,cls:'chip-nc-neutral'};
 }
+function hasActiveScheduledContact(lead){
+  const iso=normProx(lead.proximo_contato);
+  if(!iso)return false;
+  const d=parseDate(iso);
+  if(!d)return false;
+  const today=dayStart(new Date());
+  const base=dayStart(d);
+  return base.getTime()>=today.getTime();
+}
 function isOverdueContact(lead){
+  // Se tem próximo contato hoje ou futuro, está atualizado até essa data.
+  if(hasActiveScheduledContact(lead))return false;
   // Sem contato por mais de 7 dias (atualizado_em)
   const d=daysSince(lead.atualizado_em||lead.criado_em||lead.data_inicio||'');
   return d>7&&normEtapa(lead.etapa)!=='PERDIDO'&&normEtapa(lead.etapa)!=='STAND BY'&&normEtapa(lead.etapa)!=='Fechado';
@@ -5398,7 +5409,9 @@ function shortLeadName(nome,max=28){
 function cardHTML(l){
   const etapa=normEtapa(l.etapa);
   const isPerd=etapa==='PERDIDO';const isSB=etapa==='STAND BY';
-  const pv=prioVisual(l.prioridade||'Baixa');
+  const scheduled=hasActiveScheduledContact(l)&&!isPerd;
+  const pvBase=prioVisual(l.prioridade||'Baixa');
+  const pv=scheduled?{cls:'p-scheduled',lbl:pvBase.lbl}:pvBase;
   const wa=l.telefone?`<a class="wa-btn" href="https://wa.me/${normPhone(l.telefone)}" target="_blank" onclick="event.stopPropagation()">${waSvg()}</a>`:'';
   const nc=nextContact(l);
   const ncHTML=nc?`<span class="chip ${escH(nc.cls)}">${escH(nc.text)}</span>`:'';
@@ -8528,6 +8541,32 @@ window.addEventListener('resize',()=>{
   #dlg .dlg-foot-left .btn{width:100% !important;min-width:0 !important;height:42px !important;min-height:42px !important;padding:0 5px !important;border-radius:14px !important;font-size:11.5px !important;white-space:nowrap !important;}
 }
 #btnGravarAtendimento.is-recording{background:#DC2626 !important;color:#fff !important;border-color:#DC2626 !important;}
+
+
+/* ===== CORREÇÃO REAL: LEAD AGENDADO FICA AZUL ATÉ VENCER ===== */
+.card.p-scheduled{
+  background:#DBEAFE !important;
+  border-color:#60A5FA !important;
+}
+.card.p-scheduled::before{
+  background:#2563EB !important;
+}
+body.t-light .card.p-scheduled{
+  background:#DBEAFE !important;
+  border-color:#60A5FA !important;
+}
+body.t-navy .card.p-scheduled{
+  background:#DDEBFF !important;
+  border-color:#5B9BEE !important;
+}
+body.t-dark .card.p-scheduled{
+  background:#172B46 !important;
+  border-color:#3B82F6 !important;
+}
+body.t-dark .card.p-scheduled .card-nm,
+body.t-dark .card.p-scheduled .sb-nm{
+  color:#F3F7FC !important;
+}
 </style>
 <script id="levecrm-patch-3004-mobile-premium-audio-script">
 (function(){
