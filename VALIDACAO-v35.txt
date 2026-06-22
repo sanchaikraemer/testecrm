@@ -1,0 +1,11 @@
+LEVECRM V35 — VALIDAÇÃO
+
+- Pacote preparado com todos os arquivos na raiz para upload pelo GitHub Pages.
+- Referências de CSS, JavaScript e logo atualizadas para caminhos planos.
+- Cache do Service Worker incrementado para levecrm-v35.
+- Estratégia de rede do Service Worker ajustada para priorizar arquivos novos.
+- JavaScript principal: sintaxe validada.
+- Service Worker: sintaxe validada.
+- Scripts internos de propostas.html: sintaxe validada.
+- Nenhuma referência restante para ./assets/.
+- Arquivos obrigatórios presentes: index.html, styles.css, app.js, levecrm-logo.png, propostas.html, manifest e ícones.

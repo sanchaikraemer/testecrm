@@ -1,23 +1,18 @@
-# LeveCRM v34 corrigido
+# LeveCRM v35 — pacote plano para GitHub Pages
 
-## Correção desta versão
-A migração v34 falhava em bancos onde algumas colunas de usuário estavam como `text` e o Supabase retornava `auth.uid()` como `uuid`.
+Esta versão foi preparada sem a pasta `assets`, porque no upload anterior os arquivos dessa pasta não foram enviados ao repositório. Sem `styles.css`, `app.js` e `levecrm-logo.png`, o navegador mostrou apenas o HTML cru.
 
-A v34 normaliza as comparações para texto e corrige também os vínculos entre leads e anexos. O script é idempotente e pode ser executado mesmo depois da tentativa da v34.
+## Publicação no GitHub
 
-## Publicação
-Envie **todos os arquivos e pastas deste pacote** para a mesma pasta do Vercel/GitHub Pages. O arquivo inicial é `index.html`.
+1. Exclua os arquivos atuais do repositório ou substitua todos eles.
+2. Extraia este ZIP no computador.
+3. Em **Add file → Upload files**, envie todos os arquivos extraídos para a raiz do repositório.
+4. Confirme que aparecem na mesma tela: `index.html`, `styles.css`, `app.js` e `levecrm-logo.png`.
+5. Aguarde o GitHub Pages concluir o deploy.
+6. Abra o site e pressione **Ctrl + F5**.
+
+Não crie pasta `assets`. Todos os arquivos desta versão ficam na raiz.
 
 ## Supabase
-1. Abra o SQL Editor.
-2. Apague o conteúdo da consulta anterior.
-3. Cole e execute `supabase-seguranca-v34.sql` inteiro.
-4. Confirme a mensagem de sucesso.
-5. Teste com duas contas diferentes: uma conta não deve visualizar leads, agenda nem anexos da outra.
 
-## Antes de liberar para usuários
-- Confirme que a Edge Function `direciona-openai` possui a chave da OpenAI apenas nos Secrets do Supabase.
-- Confirme que o bucket `lead-attachments` existe e está privado.
-
-## Limite técnico dos lembretes
-Um site estático não consegue acordar sozinho quando navegador e PWA estão totalmente encerrados. Para alertas garantidos com o aplicativo fechado, é necessário usar notificações push disparadas por backend/cron.
+O arquivo `supabase-seguranca-v35.sql` contém a migração corrigida. Se a migração v34 já executou com sucesso, não é necessário repetir. Caso ainda tenha falhado, execute a v35 inteira no SQL Editor.
