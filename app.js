@@ -1,4 +1,4 @@
-/* LeveCRM v35 — código consolidado
+/* LeveCRM v36 — recuperação de leads legados e consulta confiada ao RLS
    Gerado a partir do arquivo recebido em 22/06/2026. */
 
 /* ===== main ===== */
@@ -357,14 +357,21 @@ async function loadAll(){
   try{
     setStatus('warn','Conectando…');
     if(!ACCESS_USER?.id){ALL=[];ATTACHES=[];refreshAttMap();render();return;}
-    const path=ACCESS_USER?.is_admin?`${TBL}?select=*`:`${TBL}?select=*&access_user_id=eq.${encodeURIComponent(ACCESS_USER.id)}`;
-    const data=await sbFetch(path);
-    const safeRows=(Array.isArray(data)?data:[]).filter(l=>ACCESS_USER?.is_admin || String(l.access_user_id||'')===String(ACCESS_USER.id));
-    ALL=safeRows.map(l=>({...l,etapa:normEtapa(l.etapa),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)}));
+    // A segurança e o isolamento pertencem ao RLS do Supabase.
+    // Não filtramos novamente pelo access_user_id no navegador, pois isso ocultava
+    // registros legados que o banco já havia autorizado para o usuário/admin.
+    const data=await sbFetch(`${TBL}?select=*`);
+    const rows=Array.isArray(data)?data:[];
+    ALL=rows.map(l=>({...l,etapa:normEtapa(l.etapa),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)}));
     await loadAttaches();
     setStatus('ok','');
     render();
-  }catch(e){setStatus('bad','Sem conexão');console.error(e);ALL=[];ATTACHES=[];refreshAttMap();render();}
+  }catch(e){
+    setStatus('bad','Erro ao carregar dados');
+    console.error(e);
+    ALL=[];ATTACHES=[];refreshAttMap();render();
+    showToast('Não foi possível carregar os leads. Abra o console ou revise as políticas do Supabase.',4200);
+  }
 }
 async function loadAttaches(){
   try{

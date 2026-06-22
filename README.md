@@ -1,18 +1,13 @@
-# LeveCRM v35 — pacote plano para GitHub Pages
+# LeveCRM v36 — recuperação dos leads antigos
 
-Esta versão foi preparada sem a pasta `assets`, porque no upload anterior os arquivos dessa pasta não foram enviados ao repositório. Sem `styles.css`, `app.js` e `levecrm-logo.png`, o navegador mostrou apenas o HTML cru.
+A v35 passou a usar o UUID do Supabase Auth para filtrar os leads. Os registros antigos continuaram com o identificador do acesso anterior e ficaram invisíveis. O pacote não contém comando de exclusão dos leads.
 
-## Publicação no GitHub
+## Ordem correta
 
-1. Exclua os arquivos atuais do repositório ou substitua todos eles.
-2. Extraia este ZIP no computador.
-3. Em **Add file → Upload files**, envie todos os arquivos extraídos para a raiz do repositório.
-4. Confirme que aparecem na mesma tela: `index.html`, `styles.css`, `app.js` e `levecrm-logo.png`.
-5. Aguarde o GitHub Pages concluir o deploy.
-6. Abra o site e pressione **Ctrl + F5**.
+1. No Supabase, abra **SQL Editor**.
+2. Cole e execute todo o arquivo `recuperar-leads-v36.sql`.
+3. No resultado final, confira `total_leads_recuperados`.
+4. Envie para a raiz do GitHub Pages os arquivos da v36, substituindo os anteriores.
+5. Aguarde o deploy e pressione `Ctrl + F5`.
 
-Não crie pasta `assets`. Todos os arquivos desta versão ficam na raiz.
-
-## Supabase
-
-O arquivo `supabase-seguranca-v35.sql` contém a migração corrigida. Se a migração v34 já executou com sucesso, não é necessário repetir. Caso ainda tenha falhado, execute a v35 inteira no SQL Editor.
+O `app.js` da v36 também deixou de repetir no navegador o filtro de proprietário. A partir desta versão, o isolamento é feito pelo RLS do Supabase, que é o local correto para essa segurança.
