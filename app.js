@@ -1,4 +1,4 @@
-/* LeveCRM v37 — recuperação de leads legados e consulta confiada ao RLS
+/* LeveCRM v38 — correção de inicialização e carregamento de leads
    Gerado a partir do arquivo recebido em 22/06/2026. */
 
 /* ===== main ===== */
@@ -13,6 +13,12 @@ let editingId = null;
 let origSnap = null;
 let SELECTED_LEAD_ID = null;
 const NOTIFICATION_TIMERS = new Map();
+const ALL_THEMES = ['t-navy','t-light','t-dark'];
+const dlg = document.getElementById('dlg');
+const leadForm = document.getElementById('leadForm');
+let aiImgB64 = null;
+let aiImgType = null;
+let aiExtracted = {nome:'',fone:'',emp:'',obs:''};
 
 /* ══════════════════════════════════════
    CONFIG SUPABASE
@@ -370,7 +376,7 @@ async function loadAll(){
     if(error)throw error;
     rows=Array.isArray(rows)?rows:[];
 
-    // Fallback seguro para bases antigas: a função SQL v37 confere o usuário
+    // Fallback seguro para bases antigas: a função SQL v38 confere o usuário
     // autenticado no servidor e devolve apenas os registros autorizados.
     if(rows.length===0){
       const {data:rpcRows,error:rpcError}=await AUTH_CLIENT.rpc('levecrm_get_my_leads');
@@ -1625,7 +1631,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=35');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=38');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1824,6 +1830,11 @@ bindEl('agTime','input',syncAgNotifyState);
 bindEl('agDesc','keydown',e=>{if(e.key==='Enter'){e.preventDefault();agAdd();}});
 document.querySelectorAll('.ag-tab').forEach(t=>t.addEventListener('click',()=>{switchAgTab(t.dataset.agtab);if(t.dataset.agtab==='upcoming')renderUpcoming();}));
 
+function switchAgTab(tab){
+  document.querySelectorAll('.ag-tab').forEach(el=>el.classList.toggle('active',el.dataset.agtab===tab));
+  document.querySelectorAll('[data-ag-panel]').forEach(el=>el.classList.toggle('active',el.dataset.agPanel===tab));
+}
+
 // Admin tabs
 document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.adm-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
@@ -2007,8 +2018,8 @@ if(!res.ok)throw new Error(await res.text().catch(()=>("HTTP "+res.status)));
 let j=await res.json();let txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:"").trim();let parsed;try{parsed=JSON.parse(txt)}catch(e){let m=txt.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0])}if(!parsed)throw new Error("A IA não retornou JSON válido.");return parsed}
 function reading(d){$("analysisSituation").textContent=d.situacao||"Análise concluída.";$("analysisHeat").textContent=d.temperatura||"—";$("analysisProfile").textContent=d.perfil||"—";$("analysisRisk").textContent=d.risco||"—";$("analysisGoal").textContent=d.objetivo||"—";$("analysisNext").textContent=d.proximo_passo||"—";let a=$("analysisAvoid");if(a&&d.evitar){a.style.display="block";a.textContent="Evitar: "+d.evitar}}
 function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.length){area.innerHTML='<div class="dia-empty">'+esc(empty)+'</div>';return}area.innerHTML=items.map((r,i)=>`<div class="dia-response"><div class="dia-response-head"><div class="dia-response-label">${esc(r.label||("Opção "+(i+1)))}</div><button class="dia-copy" type="button" data-copy="${encodeURIComponent(r.texto||"")}">Copiar</button></div><p>${esc(r.texto||"")}</p>${r.dica?`<div class="dia-tip">${esc(r.dica)}</div>`:""}</div>`).join("")}
-async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(window.showAiLoading) showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");status("Análise interna concluída.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(window.hideAiLoading) hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
-async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(window.showAiLoading) showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");status("Retomada gerada.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(window.hideAiLoading) hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
+async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");status("Análise interna concluída.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
+async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");status("Retomada gerada.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
 function clearAll(){historyFiles=[];lastFile=null;lastAnalysis=null;if($("clientMessage"))$("clientMessage").value="";if($("historyPrintInput"))$("historyPrintInput").value="";if($("lastPrintInput"))$("lastPrintInput").value="";counts();status("Aguardando mensagem, contexto ou última conversa.");$("analysisSituation").textContent="Cole uma mensagem ou anexe prints.";$("analysisHeat").textContent="—";$("analysisProfile").textContent="—";$("analysisRisk").textContent="—";$("analysisGoal").textContent="—";$("analysisNext").textContent="—";let a=$("analysisAvoid");if(a){a.style.display="none";a.textContent=""}$("analysisResponses").innerHTML='<div class="dia-empty">A análise aparecerá aqui.</div>';$("retomadaOutput").innerHTML='<div class="dia-empty">A retomada aparecerá aqui.</div>'}
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="historyPrintInput"){historyFiles=historyFiles.concat(Array.from(e.target.files||[]));e.target.value="";counts();status(historyFiles.length+" print(s) de contexto anexado(s).")}if(e.target&&e.target.id==="lastPrintInput"){lastFile=(e.target.files&&e.target.files[0])?e.target.files[0]:null;e.target.value="";counts();status(lastFile?"Última conversa anexada.":"Nenhuma última conversa anexada.")}});
 document.addEventListener("click",e=>{let rm=e.target.closest(".dia-file-remove");if(rm){let kind=rm.dataset.kind;if(kind==="history"){historyFiles.splice(Number(rm.dataset.index),1)}else{lastFile=null}counts();status("Anexo removido.");return}let c=e.target.closest(".dia-copy");if(c){let t=decodeURIComponent(c.getAttribute("data-copy")||"");navigator.clipboard.writeText(t).then(()=>{c.textContent="Copiado";setTimeout(()=>c.textContent="Copiar",1200)});return}if(e.target&&e.target.id==="btnAiAnalyzeMain")analyze();if(e.target&&e.target.id==="btnRetomadaMain")retomada();if(e.target&&e.target.id==="btnClearAnalyzer")clearAll()});
