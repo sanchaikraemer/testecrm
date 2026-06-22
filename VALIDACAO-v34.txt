@@ -1,0 +1,23 @@
+LEVECRM v34 — RELATÓRIO DE VALIDAÇÃO
+
+CORREÇÃO PRINCIPAL
+- Corrigido o erro PostgreSQL 42883: operator does not exist: uuid = text.
+- Todas as comparações entre auth.uid() e colunas de usuário usam ::text nos dois lados.
+- Vínculos lead_attachments.lead_id x leads.id também foram normalizados.
+- Script SQL envolvido em transação e idempotente.
+
+PACOTE
+- Versão alterada de 33 para 34.
+- Cache da PWA alterado para levecrm-v34.
+- Referências CSS/JS/Service Worker atualizadas para ?v=34.
+- Arquivo index-test.html removido do pacote de produção.
+
+VALIDAÇÕES LOCAIS
+- JavaScript principal: sintaxe aprovada.
+- Service Worker: sintaxe aprovada.
+- Scripts do módulo de propostas: sintaxe aprovada.
+- Referências locais: conferidas.
+
+VALIDAÇÃO EXTERNA OBRIGATÓRIA
+- Executar supabase-seguranca-v34.sql no projeto Supabase.
+- Testar login, criação/edição de lead, agenda e anexos com duas contas reais.

@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Proposta Premium v3 - LeveCRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #185FA5;
+      --primary-dark: #0d4478;
+      --primary-light: #eaf2fb;
+      --bg-app: #f8f9fa;
+      --bg-panel: #ffffff;
+      --bg-preview: #f0f2f5;
+      --text-main: #1a1a1a;
+      --text-muted: #6c757d;
+      --border: #dee2e6;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-app);
+      margin: 0;
+      padding: 0;
+      line-height: 1.4;
+    }
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      overflow: visible;
+    }
+
+    /* Sidebar Panel */
+    .sidebar {
+      width: 380px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(to right, #fff, #f8f9fa);
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      margin: 0;
+      color: var(--primary-dark);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 6px 0 0;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .sidebar-footer {
+      padding: 14px;
+      border-top: 1px solid var(--border);
+      background: #f8f9fa;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Form Elements */
+    .form-section {
+      margin-bottom: 16px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-group:last-child { margin-bottom: 0; }
+
+    .label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #444;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .input-with-prefix {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .input-with-prefix input {
+      padding-left: 32px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Aportes List */
+    .aporte-item {
+      display: grid;
+      grid-template-columns: 1fr 80px 32px;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--danger);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 18px;
+    }
+
+    .btn-icon:hover {
+      background: #fff5f5;
+      border-color: #feb2b2;
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 6px;
+      background: #fff;
+      border: 1px dashed var(--primary);
+      color: var(--primary);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-add:hover {
+      background: var(--primary-light);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .btn-outline:hover {
+      background: #f8f9fa;
+      color: var(--text-main);
+    }
+
+    /* Preview Area */
+    .preview-area {
+      flex: 1;
+      background: var(--bg-preview);
+      padding: 20px;
+      overflow: visible;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .proposal-paper {
+      width: 100%;
+      max-width: 850px;
+      background: #fff;
+      box-shadow: var(--shadow-lg);
+      border-radius: 2px;
+      padding: 40px;
+      position: relative;
+      display: block;
+      overflow: visible;
+      margin-bottom: 24px;
+    }
+
+    /* Proposal Content */
+    .proposal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 16px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-placeholder {
+      width: 160px;
+      height: 54px;
+      border-radius: 0;
+      background: transparent;
+      display: block;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .company-info h2 {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--primary-dark);
+      display:none;
+    }
+
+    .company-info p {
+      display:none;
+    }
+
+    .proposal-meta {
+      text-align: right;
+    }
+
+    .proposal-meta h3 {
+      margin: 0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .proposal-meta p {
+      margin: 3px 0 0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .client-section {
+      margin-bottom: 20px;
+    }
+
+    .client-section h4 {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 3px;
+      font-weight: 700;
+    }
+
+    .client-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      margin: 0;
+      color: #1a1a1a;
+      font-weight: 700;
+    }
+
+    .unit-details {
+      display: flex;
+      gap: 24px;
+      margin-top: 10px;
+    }
+
+    .unit-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .unit-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .unit-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    /* Financial Summary Cards */
+    .financial-cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: stretch;
+    }
+
+    .card {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border-left: 3px solid var(--primary);
+    }
+
+    .card-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .card-value {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1a1a1a;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .card.highlight {
+      background: var(--primary-dark);
+      border-left: none;
+    }
+
+    .card.highlight .card-label { color: rgba(255,255,255,0.7); }
+    .card.highlight .card-value { color: #fff; }
+
+    /* Table */
+    .negotiation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .negotiation-table th {
+      text-align: left;
+      padding: 10px;
+      background: #f8f9fa;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+      font-weight: 700;
+    }
+
+    .negotiation-table td {
+      padding: 10px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+
+    .item-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #1a1a1a;
+      margin-bottom: 2px;
+    }
+
+    .item-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    .item-value {
+      font-weight: 800;
+      font-size: 14px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* Totals Section */
+    .totals-area {
+      margin-left: auto;
+      width: 300px;
+      margin-bottom: 16px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 12px;
+    }
+
+    .total-row.grand-total {
+      border-top: 2px solid var(--primary-dark);
+      margin-top: 8px;
+      padding-top: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--primary-dark);
+    }
+
+    #status-container {
+      display: none !important;
+    }
+
+    /* Footer */
+    .proposal-footer {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .observations {
+      margin-top: 12px;
+      padding: 10px;
+      background: #fff9f0;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: #666;
+      border: 1px solid #ffeeba;
+    }
+
+    .observations h5 {
+      margin: 0 0 4px;
+      text-transform: uppercase;
+      font-size: 10px;
+      color: #856404;
+    }
+
+    @media (max-width: 980px) {
+      .financial-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .totals-area {
+        width: 100%;
+      }
+      .proposal-header,
+      .proposal-footer,
+      .unit-details {
+        gap: 12px;
+      }
+      .proposal-header,
+      .proposal-footer {
+        flex-direction: column;
+      }
+    }
+
+    /* Print Styles */
+    @media print {
+      @page {
+        size: A4;
+        margin: 8mm;
+      }
+      
+      body {
+        background: #fff;
+      }
+      
+      .sidebar { display: none; }
+      .preview-area { 
+        padding: 0; 
+        background: #fff; 
+        overflow: visible;
+      }
+      
+      .proposal-paper { 
+        box-shadow: none; 
+        width: 100%; 
+        max-width: 100%; 
+        padding: 0;
+        min-height: auto;
+      }
+      
+      .proposal-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+      }
+      
+      .client-section {
+        margin-bottom: 14px;
+      }
+      
+      .financial-cards {
+        margin-bottom: 14px;
+        gap: 8px;
+      }
+      
+      .card {
+        padding: 10px;
+      }
+      
+      .negotiation-table {
+        margin-bottom: 12px;
+        font-size: 12px;
+      }
+      
+      .negotiation-table th,
+      .negotiation-table td {
+        padding: 8px;
+      }
+      
+      .totals-area {
+        margin-bottom: 12px;
+      }
+      
+      .proposal-footer {
+        padding-top: 12px;
+        font-size: 10px;
+      }
+      
+      .observations {
+        margin-top: 8px;
+        padding: 8px;
+        font-size: 11px;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .app-container { flex-direction: column; height: auto; overflow: visible; }
+      .sidebar { width: 100%; height: auto; }
+      .preview-area { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>leve<span style="color:#D7AF42">crm</span></h1>
+        <p>Gerador de Propostas LeveCRM</p>
+      </div>
+      
+      <div class="sidebar-content">
+        <!-- Cliente e Unidade -->
+        <div class="form-section">
+          <div class="form-section-title">1. Cliente e Unidade</div>
+          <div class="form-group">
+            <label class="label">Nome do Cliente</label>
+            <input type="text" id="f-cliente" placeholder="Ex: João Silva" oninput="render()">
+          </div>
+          <div class="form-group">
+            <label class="label">Empreendimento</label>
+            <input type="text" id="f-empreendimento" placeholder="Ex: Renaissance" oninput="render()">
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="label">Apartamento</label>
+              <input type="text" id="f-apto" placeholder="Ex: 706" oninput="render()">
+            </div>
+            <div class="form-group">
+              <label class="label">Box</label>
+              <input type="text" id="f-box" placeholder="Ex: 12" oninput="render()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Valores Base -->
+        <div class="form-section">
+          <div class="form-section-title">2. Valores de Venda</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="label">Valor Apto</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="f-valor-apto" step="0.01" oninput="render()">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="label">Valor Box</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="f-valor-box" step="0.01" oninput="render()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Composição -->
+        <div class="form-section">
+          <div class="form-section-title">3. Condições de Pagamento</div>
+          
+          <div class="form-group">
+            <label class="label">Entrada / Ato</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">R$</span>
+              <input type="number" id="f-entrada" step="0.01" oninput="render()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Permuta (Valor)</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">R$</span>
+              <input type="number" id="f-permuta" step="0.01" oninput="render()">
+            </div>
+            <input type="text" id="f-permuta-desc" placeholder="Descrição" style="margin-top:4px" oninput="render()">
+          </div>
+
+          <div class="form-group">
+            <label class="label">Aportes / Reforços</label>
+            <div id="aportes-list"></div>
+            <button class="btn-add" onclick="addAporte()">+ Aporte</button>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Chaves</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">R$</span>
+              <input type="number" id="f-chaves" step="0.01" oninput="render()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Parcelamento Mensal</label>
+            <div class="grid-2">
+              <input type="number" id="f-parcelas-mensais" placeholder="Nº parcelas" oninput="render()">
+              <div class="input-with-prefix">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="f-valor-parcela-mensal" step="0.01" placeholder="Valor" oninput="render()">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Parcelamento Semestral</label>
+            <div class="grid-2">
+              <input type="number" id="f-parcelas-semestrais" placeholder="Nº parcelas" oninput="render()">
+              <div class="input-with-prefix">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="f-valor-parcela-semestral" step="0.01" placeholder="Valor" oninput="render()">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Parcelamento Anual</label>
+            <div class="grid-2">
+              <input type="number" id="f-parcelas-anuais" placeholder="Nº parcelas" oninput="render()">
+              <div class="input-with-prefix">
+                <span class="input-prefix">R$</span>
+                <input type="number" id="f-valor-parcela-anual" step="0.01" placeholder="Valor" oninput="render()">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">Correção</label>
+            <select id="f-correcao" onchange="render()">
+              <option value="">Sem correção</option>
+              <option value="INCC">INCC (Durante obra)</option>
+              <option value="0.95">0,95% ao mês</option>
+              <option value="IGPM">IGP-M + 1%</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Datas e Obs -->
+        <div class="form-section">
+          <div class="form-section-title">4. Informações Adicionais</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="label">Data Emissão</label>
+              <input type="date" id="f-data-emissao" oninput="render()">
+            </div>
+            <div class="form-group">
+              <label class="label">Validade</label>
+              <input type="text" id="f-validade" placeholder="Ex: 7 dias" oninput="render()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Observações</label>
+            <textarea id="f-obs" rows="2" oninput="render()" style="font-size:12px"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+      </div>
+    </aside>
+
+    <main class="preview-area">
+      <div class="proposal-paper" id="proposal-content">
+        <header class="proposal-header">
+          <div class="logo-container">
+            <img class="logo-placeholder" src="./assets/levecrm-logo.png" alt="LeveCRM"/>
+            <div class="company-info">
+            </div>
+          </div>
+          <div class="proposal-meta">
+            <h3>Proposta Comercial</h3>
+            <p id="m-emissao">Data: --/--/----</p>
+            <p id="m-validade" style="color:var(--text-muted); font-size:11px">Validade: --</p>
+          </div>
+        </header>
+
+        <section class="client-section">
+          <h4>Proposta preparada para</h4>
+          <h1 class="client-name" id="m-cliente">Nome do Cliente</h1>
+          <div class="unit-details">
+            <div class="unit-item" style="min-width:220px">
+              <span class="unit-label">Empreendimento</span>
+              <span class="unit-value" id="m-empreendimento">--</span>
+            </div>
+            <div class="unit-item">
+              <span class="unit-label">Apartamento</span>
+              <span class="unit-value" id="m-apto">--</span>
+            </div>
+            <div class="unit-item">
+              <span class="unit-label">Box</span>
+              <span class="unit-value" id="m-box">--</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="financial-cards">
+          <div class="card">
+            <div class="card-label">Valor Apto</div>
+            <div class="card-value" id="m-valor-apto">R$ 0,00</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Valor Box</div>
+            <div class="card-value" id="m-valor-box">R$ 0,00</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Total Venda</div>
+            <div class="card-value" id="m-total-venda">R$ 0,00</div>
+          </div>
+          <div class="card highlight" id="saldo-card">
+            <div class="card-label">Saldo</div>
+            <div class="card-value" id="m-saldo-restante">R$ 0,00</div>
+          </div>
+        </div>
+
+        <table class="negotiation-table">
+          <thead>
+            <tr>
+              <th>Descrição da Condição</th>
+              <th style="text-align:right; width:120px">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="neg-body">
+            <!-- Rows will be added here -->
+          </tbody>
+        </table>
+
+        <div class="totals-area">
+          <div class="total-row">
+            <span>Total Composto</span>
+            <span id="ft-composto">R$ 0,00</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>Total da Venda</span>
+            <span id="ft-total">R$ 0,00</span>
+          </div>
+          <div id="status-container">
+            <!-- Status badge will appear here -->
+          </div>
+        </div>
+
+        <div class="observations" id="obs-container" style="display:none">
+          <h5>Observações</h5>
+          <div id="m-obs"></div>
+        </div>
+
+        <footer class="proposal-footer">
+          <div>
+            <strong>LeveCRM</strong> | Proposta comercial
+          </div>
+          <div style="text-align:right">
+            Sujeito a análise de crédito e disponibilidade.
+          </div>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const aportes = [];
+
+    // Initialize date
+    document.getElementById('f-data-emissao').valueAsDate = new Date();
+
+    function money(value) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(value || 0);
+    }
+
+    function num(id) {
+      return parseFloat(document.getElementById(id).value) || 0;
+    }
+
+    function txt(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function addAporte() {
+      aportes.push({ valor: 0, data: '' });
+      drawAportes();
+      render();
+    }
+
+    function removeAporte(index) {
+      aportes.splice(index, 1);
+      drawAportes();
+      render();
+    }
+
+    function updateAporte(index, field, value) {
+      aportes[index][field] = field === 'valor' ? parseFloat(value) || 0 : value;
+      render();
+    }
+
+    function drawAportes() {
+      const container = document.getElementById('aportes-list');
+      container.innerHTML = '';
+      aportes.forEach((a, i) => {
+        const div = document.createElement('div');
+        div.className = 'aporte-item';
+        div.innerHTML = `
+          <div class="input-with-prefix">
+            <span class="input-prefix">R$</span>
+            <input type="number" step="0.01" value="${a.valor || ''}" placeholder="Valor" oninput="updateAporte(${i}, 'valor', this.value)">
+          </div>
+          <input type="text" value="${a.data}" placeholder="Data" oninput="updateAporte(${i}, 'data', this.value)">
+          <button class="btn-icon" onclick="removeAporte(${i})">&times;</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function render() {
+      // Get values
+      const cliente = txt('f-cliente') || 'Nome do Cliente';
+      const empreendimento = txt('f-empreendimento') || '--';
+      const apto = txt('f-apto') || '--';
+      const box = txt('f-box') || '--';
+      const valorApto = num('f-valor-apto');
+      const valorBox = num('f-valor-box');
+      const entrada = num('f-entrada');
+      const permuta = num('f-permuta');
+      const permutaDesc = txt('f-permuta-desc');
+      const chaves = num('f-chaves');
+      const parcelasMensais = num('f-parcelas-mensais');
+      const valorParcelaMensal = num('f-valor-parcela-mensal');
+      const parcelasSemestrais = num('f-parcelas-semestrais');
+      const valorParcelaSemestral = num('f-valor-parcela-semestral');
+      const parcelasAnuais = num('f-parcelas-anuais');
+      const valorParcelaAnual = num('f-valor-parcela-anual');
+      const correcao = document.getElementById('f-correcao').value;
+      const dataEmissao = txt('f-data-emissao');
+      const validade = txt('f-validade');
+      const obs = txt('f-obs');
+
+      const totalVenda = valorApto + valorBox;
+      const totalMensal = parcelasMensais * valorParcelaMensal;
+      const totalSemestral = parcelasSemestrais * valorParcelaSemestral;
+      const totalAnual = parcelasAnuais * valorParcelaAnual;
+      const totalFinanciado = totalMensal + totalSemestral + totalAnual;
+      const totalAportes = aportes.reduce((sum, a) => sum + a.valor, 0);
+      const totalComposto = entrada + permuta + chaves + totalFinanciado + totalAportes;
+      const saldo = totalVenda - totalComposto;
+
+      // Update Header & Meta
+      document.getElementById('m-cliente').textContent = cliente;
+      document.getElementById('m-empreendimento').textContent = empreendimento;
+      document.getElementById('m-apto').textContent = apto;
+      document.getElementById('m-box').textContent = box;
+      
+      if (dataEmissao) {
+        const date = new Date(dataEmissao);
+        document.getElementById('m-emissao').textContent = `Data: ${date.toLocaleDateString('pt-BR')}`;
+      }
+      document.getElementById('m-validade').textContent = validade ? `Validade: ${validade}` : '';
+
+      // Update Cards - SEPARATED VALUES
+      document.getElementById('m-valor-apto').textContent = money(valorApto);
+      document.getElementById('m-valor-box').textContent = money(valorBox);
+      document.getElementById('m-total-venda').textContent = money(totalVenda);
+      document.getElementById('m-saldo-restante').textContent = money(saldo);
+      document.getElementById('saldo-card').style.display = Math.abs(saldo) < 0.01 ? 'none' : 'block';
+
+      // Update Table
+      const tbody = document.getElementById('neg-body');
+      tbody.innerHTML = '';
+
+      const addRow = (title, desc, value) => {
+        if (value <= 0 && !desc) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="item-title">${title}</div>
+            <div class="item-desc">${desc}</div>
+          </td>
+          <td class="item-value">${money(value)}</td>
+        `;
+        tbody.appendChild(tr);
+      };
+
+      if (entrada > 0) addRow('Entrada / Ato', 'Pagamento inicial para fechamento do negócio.', entrada);
+      if (permuta > 0 || permutaDesc) addRow('Permuta', permutaDesc || 'Bem recebido como parte do pagamento.', permuta);
+      
+      aportes.forEach((a, i) => {
+        if (a.valor > 0 || a.data) {
+          addRow(`Aporte / Reforço ${i+1}`, a.data ? `${money(a.valor)} — ${a.data}` : 'Pagamento programado.', a.valor);
+        }
+      });
+
+      if (chaves > 0) addRow('Chaves', 'Pagamento na entrega da unidade.', chaves);
+      
+      const sufixoCorrecao = correcao === 'INCC'
+        ? ' corrigidas pelo INCC.'
+        : correcao === '0.95'
+        ? ' com correção de 0,95% a.m.'
+        : correcao === 'IGPM'
+        ? ' corrigidas por IGP-M + 1% a.m.'
+        : '.';
+
+      if (parcelasMensais > 0) {
+        addRow('Parcelamento Mensal', `${parcelasMensais} parcelas mensais de ${money(valorParcelaMensal)}${sufixoCorrecao}`, totalMensal);
+      }
+
+      if (parcelasSemestrais > 0) {
+        addRow('Parcelamento Semestral', `${parcelasSemestrais} parcelas semestrais de ${money(valorParcelaSemestral)}${sufixoCorrecao}`, totalSemestral);
+      }
+
+      if (parcelasAnuais > 0) {
+        addRow('Parcelamento Anual', `${parcelasAnuais} parcelas anuais de ${money(valorParcelaAnual)}${sufixoCorrecao}`, totalAnual);
+      }
+
+      if (tbody.innerHTML === '') {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999; padding:20px; font-size:12px">Nenhuma condição de pagamento definida.</td></tr>';
+      }
+
+      // Update Totals
+      document.getElementById('ft-composto').textContent = money(totalComposto);
+      document.getElementById('ft-total').textContent = money(totalVenda);
+
+      // Status removido por opção visual
+
+      // Observations
+      const obsCont = document.getElementById('obs-container');
+      if (obs) {
+        obsCont.style.display = 'block';
+        document.getElementById('m-obs').textContent = obs;
+      } else {
+        obsCont.style.display = 'none';
+      }
+    }
+
+    function clearForm() {
+      if (confirm('Deseja limpar todos os campos?')) {
+        document.querySelectorAll('input, textarea').forEach(i => i.value = '');
+        document.getElementById('f-correcao').value = '';
+        aportes.length = 0;
+        drawAportes();
+        document.getElementById('f-data-emissao').valueAsDate = new Date();
+        render();
+      }
+    }
+
+    // Initial render
+    render();
+  </script>
+
+<script>
+(function(){
+  function setField(id,value){
+    const el=document.getElementById(id);
+    if(!el || value===undefined || value===null) return;
+    el.value=String(value);
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  window.addEventListener('message',function(event){
+    const data=event.data||{};
+    if(data.type!=='LEVECRM_LEAD') return;
+    const lead=data.lead||{};
+    setField('f-cliente',lead.nome||'');
+    setField('f-empreendimento',lead.empreendimento||'');
+    setField('f-obs',lead.observacao||'');
+    if(typeof render==='function') render();
+  });
+  try{ parent.postMessage({type:'LEVECRM_PROPOSAL_READY'},'*'); }catch(e){}
+})();
+</script>
+
+</body>
+</html>
