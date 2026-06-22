@@ -46,7 +46,7 @@ const LISTS={
   visita:['Não','Corretor','Senger','Ambos'],
   motivo_perda:['Investimento baixo','Parcelamento direto','Permuta inviável','Vai aguardar','Curiosidade','Após valor some','Comprou outro','Restritivo CPF','Insatisfação c/ produto','Outro']
 };
-const ETAPA_MAP={'Novo':'NOVO / INICIAL','Em atendimento':'ATENDIMENTO','Evoluindo':'VISITA / PROPOSTA','Negociação':'NEGOCIAÇÃO','Stand by':'STAND BY','Perdido':'PERDIDO','Contato feito':'ATENDIMENTO','Visitou':'VISITA / PROPOSTA','Proposta':'VISITA / PROPOSTA'};
+const ETAPA_MAP={'Novo':'NOVO / INICIAL','Em atendimento':'ATENDIMENTO','Evoluindo':'VISITA / PROPOSTA','Negociação':'NEGOCIAÇÃO','Stand by':'STAND BY','Perdido':'PERDIDO','Contato feito':'ATENDIMENTO','Visitou':'VISITA / PROPOSTA','Proposta':'VISITA / PROPOSTA','Geladeira':'STAND BY','Visita/Proposta':'VISITA / PROPOSTA','Standby':'STAND BY','Análise-financeira':'NEGOCIAÇÃO','Análise financeira':'NEGOCIAÇÃO','Atendimento':'ATENDIMENTO'};
 const MOTIVO_MAP={'Preço':'Investimento baixo','Parcelamento':'Parcelamento direto','Financiamento':'Parcelamento direto','Nunca respondeu':'Após valor some','Escolheu outro':'Comprou outro','Comprou outro':'Comprou outro','Sumiu':'Após valor some'};
 
 function loadAdminData(){
@@ -1545,19 +1545,34 @@ async function importCSV(text){
   const records=rows.slice(1).map(values=>Object.fromEntries(headers.map((h,i)=>[h,values[i]??'']))).filter(r=>String(r.nome||'').trim());
   if(!records.length){alert('Nenhum lead válido encontrado.');return;}
   if(!confirm(`Importar ${records.length} lead(s)? Registros existentes com o mesmo ID, telefone ou nome serão atualizados.`))return;
+  // Mapeamento de nomes de empreendimentos do Direciona para o CRM
+  const EMP_MAP={'Nova Vila Rica III':'NVR III','Nova Vila Rica II':'NVR I–II','Nova Vila Rica I':'NVR I–II','NVR III':'NVR III','NVR II':'NVR I–II','Produto não identificado':'Outros'};
   let saved=0,failed=0;
   for(const r of records){
     try{
       const phone=String(r.telefone||r.fone||'').replace(/\D/g,'');
-      const existing=ALL.find(x=>(r.id&&String(x.id)===String(r.id))||(phone&&String(x.telefone||'').replace(/\D/g,'')===phone)||String(x.nome||'').trim().toLowerCase()===String(r.nome||'').trim().toLowerCase());
+      const rId=String(r.id||'').trim();
+      const existing=ALL.find(x=>(rId&&String(x.id)===rId)||(phone&&String(x.telefone||'').replace(/\D/g,'')===phone)||String(x.nome||'').trim().toLowerCase()===String(r.nome||'').trim().toLowerCase());
       const etapa=normEtapa(r.etapa||'NOVO / INICIAL');
+      // Suporte ao formato Direciona: coluna "Produto/Empreendimento"
+      const empRaw=String(r.empreendimento||r['produto/empreendimento']||'Outros').trim()||'Outros';
+      const empreendimento=EMP_MAP[empRaw]||empRaw;
+      // Observação: combina Resumo + Próxima ação (formato Direciona)
+      const resumo=String(r.resumo||r.observacao||'').trim();
+      const proximaAcao=String(r.proxima_acao||'').trim();
+      const observacao=[resumo,proximaAcao?`Próxima ação: ${proximaAcao}`:''].filter(Boolean).join('\n\n');
+      // data_inicio: usa "Última interação" do Direciona ou data_inicio padrão
+      const dataInicio=normProx(r.ultima_interacao||r.data_inicio)||existing?.data_inicio||todayISO();
+      // id: usa UUID do Direciona se válido
+      const newId=existing?.id||(rId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)?rId:cid());
       const payload={
-        id:existing?.id||cid(),ordem:Number(r.ordem)||existing?.ordem||orderForTop(etapa),
-        data_inicio:normProx(r.data_inicio)||existing?.data_inicio||todayISO(),proximo_contato:normProx(r.proximo_contato),
-        nome:String(r.nome||'').trim(),telefone:phone,empreendimento:String(r.empreendimento||'Outros').trim()||'Outros',
-        etapa,prioridade:LISTS.prioridade.includes(r.prioridade)?r.prioridade:'Baixa',origem:String(r.origem||'WhatsApp').trim()||'WhatsApp',
+        id:newId,ordem:Number(r.ordem)||existing?.ordem||orderForTop(etapa),
+        data_inicio:dataInicio,proximo_contato:normProx(r.proximo_contato),
+        nome:String(r.nome||'').trim(),telefone:phone,empreendimento,
+        etapa,prioridade:LISTS.prioridade.includes(r.prioridade)?r.prioridade:'Baixa',
+        origem:String(r.origem||'WhatsApp').trim()||'WhatsApp',
         responsavel:String(r.responsavel||LISTS.responsavel[0]||'').trim(),visita:normVisita(r.visita),
-        motivo_perda:etapa==='PERDIDO'?(normMotivo(r.motivo_perda)||'Outro'):'',observacao:String(r.observacao||'').trim(),
+        motivo_perda:etapa==='PERDIDO'?(normMotivo(r.motivo_perda)||'Outro'):'',observacao,
         criado_em:existing?.criado_em||r.criado_em||nowISO(),atualizado_em:nowISO()
       };
       if(await upsertLead(payload,{silent:true}))saved++;else failed++;
