@@ -1281,6 +1281,7 @@ body.sidebar-collapsed #sideNav{transform:translateX(-100%)}
 #sideNav .side-logo strong{font-size:18px;line-height:1;font-weight:800;letter-spacing:-.04em;color:#fff}
 #sideNav .side-logo .crm{color:#F0B53E}
 #sideNav .side-logo small{display:block;font-size:10px;color:#B7C6DA;letter-spacing:.09em;text-transform:uppercase;margin-top:5px}
+#sideNav .side-version{display:block;font-size:9px;color:#5A7A9A;letter-spacing:.06em;margin-top:2px;font-weight:600;font-family:monospace}
 #sideToggleNav{
   width:40px;height:40px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
   background:rgba(255,255,255,.06);color:#DCE8F8;font-size:20px;cursor:pointer;flex-shrink:0;
