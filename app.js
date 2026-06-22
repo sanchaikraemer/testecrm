@@ -1536,7 +1536,36 @@ function parseCSV(text){
 }
 function normalizeCSVHeader(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
 
-function exportCSV(){const headers=['id','ordem','data_inicio','proximo_contato','nome','telefone','empreendimento','etapa','prioridade','origem','responsavel','visita','motivo_perda','observacao','criado_em','atualizado_em'];const rows=filtered().map(r=>headers.map(h=>csvEsc(r[h])).join(','));const blob=new Blob([[headers.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`levecrm-${todayISO()}.csv`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+function exportCSV(){
+  const fields=[
+    {key:'nome',label:'Nome'},
+    {key:'telefone',label:'Telefone'},
+    {key:'empreendimento',label:'Empreendimento'},
+    {key:'etapa',label:'Etapa'},
+    {key:'prioridade',label:'Prioridade'},
+    {key:'origem',label:'Origem'},
+    {key:'responsavel',label:'Responsavel'},
+    {key:'visita',label:'Visita'},
+    {key:'motivo_perda',label:'Motivo de Perda'},
+    {key:'proximo_contato',label:'Proximo Contato'},
+    {key:'data_inicio',label:'Data Inicio'},
+    {key:'observacao',label:'Historico de Atendimento'},
+    {key:'criado_em',label:'Criado Em'},
+    {key:'atualizado_em',label:'Atualizado Em'},
+    {key:'id',label:'ID'},
+  ];
+  const allLeads=[...ALL];
+  if(!allLeads.length){showToast('Nenhum lead para exportar.');return;}
+  const header=fields.map(f=>csvEsc(f.label)).join(',');
+  const rows=allLeads.map(r=>fields.map(f=>csvEsc(r[f.key])).join(','));
+  const bom='﻿';
+  const blob=new Blob([bom+[header,...rows].join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`levecrm-todos-leads-${todayISO()}.csv`;
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  showToast(`${allLeads.length} leads exportados ✓`);
+}
 async function importCSV(text){
   const rows=parseCSV(text);
   if(rows.length<2){alert('CSV vazio ou inválido.');return;}
