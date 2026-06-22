@@ -1,9 +1,0 @@
-LeveCRM v36 — validação
-
-- app.js: sintaxe JavaScript aprovada com node --check
-- service-worker.js: sintaxe JavaScript aprovada com node --check
-- index.html referencia styles.css?v=36 e app.js?v=36
-- cache do Service Worker atualizado para levecrm-v36
-- consulta de leads passou a confiar no RLS do Supabase, sem filtro duplicado no navegador
-- SQL de recuperação não possui DELETE nem TRUNCATE
-- SQL religa apenas registros sem usuário válido ou vinculados ao acesso legado da conta informada
