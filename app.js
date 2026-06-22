@@ -1,4 +1,4 @@
-/* LeveCRM v36 — recuperação de leads legados e consulta confiada ao RLS
+/* LeveCRM v37 — recuperação de leads legados e consulta confiada ao RLS
    Gerado a partir do arquivo recebido em 22/06/2026. */
 
 /* ===== main ===== */
@@ -356,21 +356,46 @@ async function sbFetch(path,{method='GET',body=null,prefer='return=representatio
 async function loadAll(){
   try{
     setStatus('warn','Conectando…');
-    if(!ACCESS_USER?.id){ALL=[];ATTACHES=[];refreshAttMap();render();return;}
-    // A segurança e o isolamento pertencem ao RLS do Supabase.
-    // Não filtramos novamente pelo access_user_id no navegador, pois isso ocultava
-    // registros legados que o banco já havia autorizado para o usuário/admin.
-    const data=await sbFetch(`${TBL}?select=*`);
-    const rows=Array.isArray(data)?data:[];
+    const {data:sessionResult,error:sessionError}=await AUTH_CLIENT.auth.getSession();
+    if(sessionError)throw sessionError;
+    const session=sessionResult?.session;
+    if(!session?.user?.id || !ACCESS_USER?.id){
+      ALL=[];ATTACHES=[];refreshAttMap();render();
+      lockAccess('Sua sessão expirou. Entre novamente para carregar os leads.');
+      return;
+    }
+
+    // Consulta normal pela tabela, usando a sessão real do Supabase Auth.
+    let {data:rows,error}=await AUTH_CLIENT.from(TBL).select('*');
+    if(error)throw error;
+    rows=Array.isArray(rows)?rows:[];
+
+    // Fallback seguro para bases antigas: a função SQL v37 confere o usuário
+    // autenticado no servidor e devolve apenas os registros autorizados.
+    if(rows.length===0){
+      const {data:rpcRows,error:rpcError}=await AUTH_CLIENT.rpc('levecrm_get_my_leads');
+      if(!rpcError && Array.isArray(rpcRows))rows=rpcRows;
+      else if(rpcError)console.warn('Fallback RPC:',rpcError);
+    }
+
     ALL=rows.map(l=>({...l,etapa:normEtapa(l.etapa),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)}));
     await loadAttaches();
     setStatus('ok','');
     render();
+
+    if(!ALL.length){
+      const {data:diag,error:diagError}=await AUTH_CLIENT.rpc('levecrm_session_debug');
+      if(!diagError && diag){
+        const d=Array.isArray(diag)?diag[0]:diag;
+        console.warn('Diagnóstico LeveCRM:',d);
+        showToast(`Sessão conectada, mas o banco retornou 0 leads. Usuário: ${d?.email||ACCESS_USER.email||'não identificado'}.`,5200);
+      }
+    }
   }catch(e){
     setStatus('bad','Erro ao carregar dados');
     console.error(e);
     ALL=[];ATTACHES=[];refreshAttMap();render();
-    showToast('Não foi possível carregar os leads. Abra o console ou revise as políticas do Supabase.',4200);
+    showToast(`Erro ao carregar leads: ${e?.message||'falha desconhecida'}`,6200);
   }
 }
 async function loadAttaches(){
