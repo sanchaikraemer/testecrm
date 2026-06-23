@@ -1,11 +1,12 @@
-/* LeveCRM v39 — limpeza geral: versões sincronizadas, código morto removido, patches superseded eliminados
-   Gerado a partir do arquivo recebido em 22/06/2026. */
+/* LeveCRM v40 — base persistente, segurança RLS, histórico, propostas e correções gerais.
+   Pacote revisado e validado em 23/06/2026. */
 
 /* ===== main ===== */
 const F = (name) => document.querySelector(`[name="${name}"]`) || document.getElementById(name);
 let currentView = 'kanban';
 let SHOW_LOST = false;
 let SHOW_SB = false;
+let MOBILE_STAGE_FILTER = '';
 let ALL = [];
 let ATTACHES = [];
 let ATTACHES_BY_LEAD = {};
@@ -34,29 +35,28 @@ const ATT_TBL='lead_attachments';
 window.SB_KEY=SB_KEY;
 const ATT_BKT='lead-attachments';
 const AG_TBL='agenda_eventos';
-const ACCESS_TBL='crm_access_users';
+const HIST_TBL='lead_history';
+const SETTINGS_TBL='crm_settings';
+const PROPOSAL_TBL='proposals';
+const AI_TBL='ai_analyses';
+const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
 
 /* ══════════════════════════════════════
    LISTAS
 ══════════════════════════════════════ */
 const LISTS={
-  empreendimento:['Personalité','Quality','Prime','Evolutti','Boulevard','Premium Office','Renaissance','NVR I–II','NVR III','Outros'],
-  etapa:['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO','STAND BY','PERDIDO'],
-  prioridade:['Fechado','Altíssima','Alta','Média','Baixa'],
-  origem:['Meta','Instagram','Indicação','Corretor','Site','WhatsApp','Ligação','Presencial'],
+  empreendimento:[],
+  etapa:['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO','FECHADO / GANHO','STAND BY','PERDIDO'],
+  prioridade:['Altíssima','Alta','Média','Baixa'],
+  origem:[],
   responsavel:[],
   visita:['Não','Corretor','Senger','Ambos'],
   motivo_perda:['Investimento baixo','Parcelamento direto','Permuta inviável','Vai aguardar','Curiosidade','Após valor some','Comprou outro','Restritivo CPF','Insatisfação c/ produto','Outro']
 };
-const ETAPA_MAP={'Novo':'NOVO / INICIAL','Em atendimento':'ATENDIMENTO','Evoluindo':'VISITA / PROPOSTA','Negociação':'NEGOCIAÇÃO','Stand by':'STAND BY','Perdido':'PERDIDO','Contato feito':'ATENDIMENTO','Visitou':'VISITA / PROPOSTA','Proposta':'VISITA / PROPOSTA'};
+const ETAPA_MAP={'Novo':'NOVO / INICIAL','Em atendimento':'ATENDIMENTO','Evoluindo':'VISITA / PROPOSTA','Negociação':'NEGOCIAÇÃO','Stand by':'STAND BY','Perdido':'PERDIDO','Contato feito':'ATENDIMENTO','Visitou':'VISITA / PROPOSTA','Proposta':'VISITA / PROPOSTA','Fechado':'FECHADO / GANHO','FECHADO':'FECHADO / GANHO','Ganho':'FECHADO / GANHO'};
 const MOTIVO_MAP={'Preço':'Investimento baixo','Parcelamento':'Parcelamento direto','Financiamento':'Parcelamento direto','Nunca respondeu':'Após valor some','Escolheu outro':'Comprou outro','Comprou outro':'Comprou outro','Sumiu':'Após valor some'};
 
-function loadAdminData(){
-  try{const r=lsGet('crm_resp');const e=lsGet('crm_emp');const o=lsGet('crm_orig');if(r){const a=JSON.parse(r);if(a.length)LISTS.responsavel=a.map(x=>x.nome||x);}if(e){const a=JSON.parse(e);if(a.length)LISTS.empreendimento=a.map(x=>x.nome||x);}if(o){const a=JSON.parse(o);if(a.length)LISTS.origem=a;}}catch(e){}}
-function getAdminResp(){try{const r=lsGet('crm_resp');return r?JSON.parse(r):LISTS.responsavel.map(n=>({id:cid(),nome:n,fone:'',creci:''}));}catch{return[];}}
-function getAdminEmps(){try{const e=lsGet('crm_emp');return e?JSON.parse(e):LISTS.empreendimento.map(n=>({id:cid(),nome:n,tipo:'',valor:'',status:'Disponível'}));}catch{return[];}}
-function getAdminOrigs(){try{const o=lsGet('crm_orig');return o?JSON.parse(o):[...LISTS.origem];}catch{return[];}}
 
 /* ══════════════════════════════════════
    NORMALIZAÇÃO
@@ -79,7 +79,7 @@ function parseDate(iso){if(!iso)return null;const r=String(iso).trim();const od=
 function daysSince(iso){const d=parseDate(iso);if(!d)return 0;const diff=Math.floor((dayStart(new Date())-dayStart(d))/86400000);return diff<0?0:diff;}
 function escH(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function normPhone(p){const d=String(p||'').replace(/\D/g,'');if(!d)return'';return d.startsWith('55')?d:'55'+d;}
-function prioRank(p){return p==='Fechado'?5:p==='Altíssima'?4:p==='Alta'?3:p==='Média'?2:1;}
+function prioRank(p){return p==='Altíssima'?4:p==='Alta'?3:p==='Média'?2:1;}
 function fileIcon(fn,ft){const n=String(fn||'').toLowerCase();const t=String(ft||'').toLowerCase();if(t.includes('pdf')||n.endsWith('.pdf'))return'📄';if(t.includes('image')||/\.(png|jpe?g|webp|gif)$/i.test(n))return'🖼️';if(/\.(doc|docx|txt)$/i.test(n))return'📝';if(/\.(xls|xlsx|csv)$/i.test(n))return'📊';return'📎';}
 
 
@@ -276,6 +276,7 @@ async function accessResumeSession(){
   }catch(e){console.error(e);}
 }
 async function logoutAccess(){
+  clearLeveCrmLocalData();
   try{await AUTH_CLIENT.auth.signOut();}catch(e){console.error(e);}
   clearAccessSession();
   ['gateSenha','gateCadastroSenha','gateChave'].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
@@ -360,51 +361,6 @@ async function sbFetch(path,{method='GET',body=null,prefer='return=representatio
   if(r.status===204)return null;
   return r.json();
 }
-async function loadAll(){
-  try{
-    setStatus('warn','Conectando…');
-    const {data:sessionResult,error:sessionError}=await AUTH_CLIENT.auth.getSession();
-    if(sessionError)throw sessionError;
-    const session=sessionResult?.session;
-    if(!session?.user?.id || !ACCESS_USER?.id){
-      ALL=[];ATTACHES=[];refreshAttMap();render();
-      lockAccess('Sua sessão expirou. Entre novamente para carregar os leads.');
-      return;
-    }
-
-    // Consulta normal pela tabela, usando a sessão real do Supabase Auth.
-    let {data:rows,error}=await AUTH_CLIENT.from(TBL).select('*');
-    if(error)throw error;
-    rows=Array.isArray(rows)?rows:[];
-
-    // Fallback seguro para bases antigas: a função SQL v38 confere o usuário
-    // autenticado no servidor e devolve apenas os registros autorizados.
-    if(rows.length===0){
-      const {data:rpcRows,error:rpcError}=await AUTH_CLIENT.rpc('levecrm_get_my_leads');
-      if(!rpcError && Array.isArray(rpcRows))rows=rpcRows;
-      else if(rpcError)console.warn('Fallback RPC:',rpcError);
-    }
-
-    ALL=rows.map(l=>({...l,etapa:normEtapa(l.etapa),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)}));
-    await loadAttaches();
-    setStatus('ok','');
-    render();
-
-    if(!ALL.length){
-      const {data:diag,error:diagError}=await AUTH_CLIENT.rpc('levecrm_session_debug');
-      if(!diagError && diag){
-        const d=Array.isArray(diag)?diag[0]:diag;
-        console.warn('Diagnóstico LeveCRM:',d);
-        showToast(`Sessão conectada, mas o banco retornou 0 leads. Usuário: ${d?.email||ACCESS_USER.email||'não identificado'}.`,5200);
-      }
-    }
-  }catch(e){
-    setStatus('bad','Erro ao carregar dados');
-    console.error(e);
-    ALL=[];ATTACHES=[];refreshAttMap();render();
-    showToast(`Erro ao carregar leads: ${e?.message||'falha desconhecida'}`,6200);
-  }
-}
 async function loadAttaches(){
   try{
     if(!ALL.length){ATTACHES=[];refreshAttMap();return;}
@@ -419,36 +375,6 @@ async function loadAttaches(){
 function refreshAttMap(){ATTACHES_BY_LEAD=ATTACHES.reduce((a,i)=>{(a[i.lead_id]||=[]).push(i);return a;},{});}
 function attCount(id){return(ATTACHES_BY_LEAD[id]||[]).length;}
 
-async function upsertLead(payload,{silent=false}={}){
-  if(!payload.nome?.trim()){alert('Nome é obrigatório.');return false;}
-  payload.etapa=normEtapa(payload.etapa);
-  payload.motivo_perda=normMotivo(payload.motivo_perda);
-  payload.proximo_contato=normProx(payload.proximo_contato);
-  payload.visita=normVisita(payload.visita);
-  if(payload.etapa!=='PERDIDO')payload.motivo_perda='';
-  else if(!payload.motivo_perda){alert('Motivo de perda obrigatório.');return false;}
-  payload.access_user_id=ACCESS_USER?.id||payload.access_user_id||null;
-  payload.atualizado_em=nowISO();
-  payload.ordem=Number(payload.ordem)||Date.now();
-  const exists=ALL.some(x=>x.id===payload.id);
-  try{
-    if(exists){
-      const{id,...noId}=payload;
-      const u=await sbFetch(`${TBL}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:noId});
-      const upd=Array.isArray(u)&&u[0]?{...payload,...u[0]}:payload;
-      const i=ALL.findIndex(x=>x.id===id);
-      if(i>=0)ALL[i]={...upd,etapa:normEtapa(upd.etapa),motivo_perda:normMotivo(upd.motivo_perda),visita:normVisita(upd.visita),proximo_contato:normProx(upd.proximo_contato)};
-    }else{
-      payload.id=payload.id||cid();
-      payload.criado_em=payload.criado_em||nowISO();
-      const ins=await sbFetch(TBL,{method:'POST',body:payload});
-      const r=Array.isArray(ins)?ins[0]:payload;
-      ALL.unshift({...r,etapa:normEtapa(r.etapa),motivo_perda:normMotivo(r.motivo_perda),visita:normVisita(r.visita),proximo_contato:normProx(r.proximo_contato)});
-    }
-    if(!silent){showToast('Lead salvo ✓');render();}
-    return true;
-  }catch(e){console.error(e);alert('Erro ao salvar. Verifique Supabase.');return false;}
-}
 async function deleteLead(id){
   const l=ALL.find(x=>x.id===id);if(!l)return false;
   if(!confirm(`Excluir "${l.nome}" e todos os anexos vinculados?`))return false;
@@ -477,11 +403,11 @@ async function uploadFiles(leadId,files){
   const uploaded=[];
   for(const file of files){
     const safe=file.name.replace(/[^a-zA-Z0-9._-]+/g,'_');
-    const fp=`${leadId}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safe}`;
+    const fp=`${ACCESS_USER.id}/${leadId}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safe}`;
     const {error:uploadError}=await AUTH_CLIENT.storage.from(ATT_BKT).upload(fp,file,{cacheControl:'3600',upsert:false,contentType:file.type||'application/octet-stream'});
     if(uploadError)throw new Error(`${file.name}: ${uploadError.message}`);
     try{
-      const meta={lead_id:leadId,file_name:file.name,file_path:fp,file_type:file.type||''};
+      const meta={access_user_id:ACCESS_USER.id,lead_id:leadId,file_name:file.name,file_path:fp,file_type:file.type||''};
       const ins=await sbFetch(ATT_TBL,{method:'POST',body:meta});
       const row=Array.isArray(ins)?ins[0]:meta;
       uploaded.push(row);
@@ -510,7 +436,7 @@ function appendObs(cur,msg,d=new Date()){
    CARD RENDERING
 ══════════════════════════════════════ */
 function badgeInfo(lead){
-  const d=daysSince(lead.atualizado_em||lead.criado_em||lead.data_inicio||'');
+  const d=daysSince(lead.ultima_interacao_em||lead.atualizado_em||lead.criado_em||lead.data_inicio||'');
   if(d<=3)return{text:d===0?'hoje':d+'d',cls:'chip-dt-soft'};
   if(d<=7)return{text:d+'d',cls:'chip-dt-blue'};
   return{text:d+'d',cls:'chip-dt-red'};
@@ -536,11 +462,11 @@ function hasActiveScheduledContact(lead){
   return base.getTime()>=today.getTime();
 }
 function isOverdueContact(lead){
-  if(!lead || lead.prioridade==='Fechado')return false;
+  if(!lead || normEtapa(lead.etapa)==='FECHADO / GANHO')return false;
   const etapa=normEtapa(lead.etapa);
   if(etapa==='PERDIDO'||etapa==='STAND BY')return false;
   if(hasActiveScheduledContact(lead))return false;
-  const d=daysSince(lead.atualizado_em||lead.criado_em||lead.data_inicio||'');
+  const d=daysSince(leadActivityAt(lead));
   return d>7;
 }
 function prioVisual(p){
@@ -558,11 +484,15 @@ function shortLeadName(nome,max=28){
   return n.slice(0,max-1).trimEnd()+'…';
 }
 
+function wasTouchedToday(lead){
+  const d=parseDate(leadActivityAt(lead));if(!d)return false;
+  const today=new Date();return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth()&&d.getDate()===today.getDate();
+}
 function cardHTML(l){
   const etapa=normEtapa(l.etapa);
   const isPerd=etapa==='PERDIDO';const isSB=etapa==='STAND BY';
   const scheduled=hasActiveScheduledContact(l)&&!isPerd;
-  const pvBase=prioVisual(l.prioridade||'Baixa');
+  const pvBase=etapa==='FECHADO / GANHO'?prioVisual('Fechado'):prioVisual(l.prioridade||'Baixa');
   const pv=scheduled?{cls:'p-scheduled',lbl:pvBase.lbl}:pvBase;
   const wa=l.telefone?`<a class="wa-btn" href="https://wa.me/${normPhone(l.telefone)}" target="_blank" onclick="event.stopPropagation()">${waSvg()}</a>`:'';
   const nc=nextContact(l);
@@ -571,20 +501,20 @@ function cardHTML(l){
   const overdue=isOverdueContact(l);
 
   if(isSB){
-    return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}" draggable="true" data-id="${l.id}">
+    return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
       <div class="card-row1"><div class="sb-row"><div class="sb-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,26))}</div><div class="sb-sep">—</div><div class="sb-emp">${escH(l.empreendimento||'—')}</div></div>${pv.lbl}</div>
       <div class="card-row2"><div class="card-chips">${ncHTML}${attHTML}</div>${wa}</div>
     </div>`;}
 
   if(isPerd){
     const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#64748B">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
-    return`<div class="card ${pv.cls}" draggable="true" data-id="${l.id}">
+    return`<div class="card ${pv.cls}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
       <div class="card-row1"><div class="card-nm" style="padding-left:6px" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div>${pv.lbl}</div>
       <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}</div>${mot}
     </div>`;}
 
   const b=badgeInfo(l);
-  return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}" draggable="true" data-id="${l.id}">
+  return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
     <div class="card-row1"><div class="card-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div>${pv.lbl}</div>
     <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}<span class="chip ${escH(b.cls)}">${b.text}</span></div>
   </div>`;
@@ -608,32 +538,6 @@ function filtered(){
     return true;
   });
 }
-function sortLeads(leads,etapa){
-  const e=normEtapa(etapa);
-
-  // Ordem visual principal dentro de cada coluna:
-  // Fechado > Altíssima > Alta > Média > Baixa.
-  // A data de próximo contato fica como desempate dentro do mesmo nível de prioridade.
-  const active=new Set(['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO']);
-  return leads.filter(l=>normEtapa(l.etapa)===e).sort((a,b)=>{
-    const pa=prioRank(a.prioridade);
-    const pb=prioRank(b.prioridade);
-    if(pa!==pb)return pb-pa;
-
-    if(active.has(e)){
-      const na=normProx(a.proximo_contato);const nb=normProx(b.proximo_contato);
-      const today=dayStart(new Date());
-      const ka=na?Math.floor((dayStart(parseDate(na))-today)/86400000):999;
-      const kb=nb?Math.floor((dayStart(parseDate(nb))-today)/86400000):999;
-      if(ka!==kb)return ka-kb;
-    }
-
-    const oa=Number(a.ordem);const ob=Number(b.ordem);
-    if(!isNaN(oa)&&!isNaN(ob)&&oa!==ob)return oa-ob;
-
-    return new Date(b.atualizado_em||b.criado_em||0)-new Date(a.atualizado_em||a.criado_em||0);
-  });
-}
 
 /* ══════════════════════════════════════
    RENDER KANBAN
@@ -642,21 +546,48 @@ function isMobileKanban(){
   return window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
 }
 
-function sortMobilePriority(leads){
-  return [...leads].sort((a,b)=>{
-    const pa=prioRank(a.prioridade);
-    const pb=prioRank(b.prioridade);
-    if(pa!==pb)return pb-pa;
 
-    const na=normProx(a.proximo_contato);
-    const nb=normProx(b.proximo_contato);
-    const today=dayStart(new Date());
-    const ka=na?Math.floor((dayStart(parseDate(na))-today)/86400000):999;
-    const kb=nb?Math.floor((dayStart(parseDate(nb))-today)/86400000):999;
-    if(ka!==kb)return ka-kb;
-
-    return new Date(b.atualizado_em||b.criado_em||0)-new Date(a.atualizado_em||a.criado_em||0);
-  });
+function setSelectValue(select,value){
+  if(!select)return;
+  select.value=value;
+  if(value&&select.value!==value){
+    const option=document.createElement('option');option.value=value;option.textContent=value;select.appendChild(option);select.value=value;
+  }
+}
+function setMobilePriorityFilter(kind,value){
+  const desktop=document.getElementById('fPri'),mobile=document.getElementById('mfPri');
+  MOBILE_STAGE_FILTER=kind==='closed'?'closed':'';
+  if(kind==='priority'){
+    SHOW_LOST=false;SHOW_SB=false;setSelectValue(desktop,value);setSelectValue(mobile,value);
+  }else{
+    setSelectValue(desktop,'');setSelectValue(mobile,'');
+    SHOW_LOST=kind==='lost';SHOW_SB=kind==='standby';
+  }
+  refreshFilterButtonLabels();render();
+}
+function mobilePriorityDashboardHTML(allLeads,visibleLeads){
+  const total=Math.max(1,allLeads.length);
+  const activePriority=document.getElementById('fPri')?.value||'';
+  const definitions=[
+    ['FECHADO / GANHO','closed','✓'],['Altíssima','priority','↑'],['Alta','priority','+'],['Média','priority','•'],['Baixa','priority','−'],['PERDIDO','lost','×'],['STAND BY','standby','Ⅱ']
+  ];
+  const cards=definitions.map(([value,kind,icon])=>{
+    const count=allLeads.filter(l=>{
+      const etapa=normEtapa(l.etapa);
+      if(kind==='lost')return etapa==='PERDIDO';
+      if(kind==='standby')return etapa==='STAND BY';
+      if(kind==='closed')return etapa==='FECHADO / GANHO';
+      return !['PERDIDO','STAND BY','FECHADO / GANHO'].includes(etapa)&&String(l.prioridade||'Baixa')===value;
+    }).length;
+    const pct=Math.round(count/total*100);
+    const active=(kind==='priority'&&activePriority===value)||(kind==='lost'&&SHOW_LOST)||(kind==='standby'&&SHOW_SB)||(kind==='closed'&&MOBILE_STAGE_FILTER==='closed');
+    const label=value==='PERDIDO'?'Perdido':value==='STAND BY'?'Stand by':value==='FECHADO / GANHO'?'Ganhos':value;
+    return `<button type="button" class="mp-card ${active?'is-active':''}" data-kind="${kind}" data-filter="${escH(value)}"><div class="mp-top"><div class="mp-label">${escH(label)}</div><div class="mp-icon">${icon}</div></div><div class="mp-num">${count}</div><div class="mp-bottom"><div class="mp-bar"><div class="mp-fill" style="width:${Math.max(5,pct)}%"></div></div><div class="mp-pct">${pct}%</div></div></button>`;
+  }).join('');
+  return `<div class="mobile-priority-dashboard">${cards}</div><div class="mobile-list-title"><strong>Leads</strong><span>${visibleLeads.length} na lista</span></div>`;
+}
+function wireMobilePriorityFilters(container){
+  container.querySelectorAll('.mp-card').forEach(btn=>btn.addEventListener('click',()=>setMobilePriorityFilter(btn.dataset.kind,btn.dataset.filter)));
 }
 
 function render(){
@@ -676,6 +607,7 @@ function render(){
   if(isMobileKanban()){
     const mobileLeads=sortMobilePriority(leads.filter(l=>{
       const e=normEtapa(l.etapa);
+      if(MOBILE_STAGE_FILTER==='closed')return e==='FECHADO / GANHO';
       if(e==='PERDIDO')return SHOW_LOST;
       if(e==='STAND BY')return SHOW_SB;
       return true;
@@ -683,8 +615,9 @@ function render(){
     const sec=document.createElement('section');
     sec.className='col mobile-priority-col';
     sec.dataset.etapa='MOBILE_PRIORITY';
-    sec.innerHTML=`<div class="col-head"><span class="cname">LEADS POR PRIORIDADE</span><span class="cnt">${mobileLeads.length}</span></div><div class="dropzone mobile-priority-list">${mobileLeads.map(cardHTML).join('')}</div>`;
+    sec.innerHTML=`<div class="col-head"><span class="cname">LEADS POR PRIORIDADE</span><span class="cnt">${mobileLeads.length}</span></div><div class="dropzone mobile-priority-list">${mobilePriorityDashboardHTML(leads,mobileLeads)}${mobileLeads.map(cardHTML).join('')}</div>`;
     board.appendChild(sec);
+    wireMobilePriorityFilters(sec);
     wireMobileCards();
     if(currentView==='dashboard')renderDashboard();
     return;
@@ -712,50 +645,64 @@ function wireMobileCards(){
 /* ══════════════════════════════════════
    DnD
 ══════════════════════════════════════ */
-let isDragging = false;
+let isDragging=false;
+let dragLeadId=null;
+let suppressCardClickUntil=0;
+function clearDragState(){
+  document.querySelectorAll('.card.dragging').forEach(c=>c.classList.remove('dragging'));
+  document.querySelectorAll('.dropzone.dragover').forEach(z=>z.classList.remove('dragover'));
+  isDragging=false;dragLeadId=null;
+}
 function wireDnD(){
-  document.querySelectorAll('.card').forEach(c=>{
-    c.addEventListener('dragstart',()=>{isDragging=true;c.classList.add('dragging');});
-    c.addEventListener('dragend',()=>{isDragging=false;c.classList.remove('dragging');});
-    c.addEventListener('click',e=>{if(isDragging)return;if(e.target.closest('.wa-btn'))return;openEdit(c.dataset.id);});
+  document.querySelectorAll('.card[data-id]').forEach(card=>{
+    card.draggable=true;
+    card.ondragstart=e=>{
+      isDragging=true;dragLeadId=card.dataset.id;suppressCardClickUntil=Date.now()+450;card.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLeadId);}catch(_e){}
+    };
+    card.ondragend=()=>{suppressCardClickUntil=Date.now()+450;clearDragState();};
+    card.onclick=e=>{if(isDragging||Date.now()<suppressCardClickUntil||e.target.closest('.wa-btn'))return;openEdit(card.dataset.id);};
   });
-  document.querySelectorAll('.dropzone').forEach(z=>{
-    z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover');});
-    z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
-    z.addEventListener('drop',async e=>{
-      e.preventDefault();z.classList.remove('dragover');
-      const card=document.querySelector('.card.dragging');const id=card?.dataset.id;if(!id)return;
-      const lead=ALL.find(x=>x.id===id);if(!lead)return;
-      const newE=normEtapa(z.dataset.drop);
-      if(newE===normEtapa(lead.etapa))return;
-      if(newE==='PERDIDO'){openEdit(id,true);return;}
-      // Registrar movimentação
-      addHistory(id,`${normEtapa(lead.etapa)} → ${newE}`);
-      await upsertLead({...lead,etapa:newE,ordem:orderForTop(newE)});
-    });
+  document.querySelectorAll('.dropzone[data-drop]').forEach(zone=>{
+    zone.ondragover=e=>{e.preventDefault();zone.classList.add('dragover');try{e.dataTransfer.dropEffect='move';}catch(_e){}};
+    zone.ondragenter=e=>{e.preventDefault();zone.classList.add('dragover');};
+    zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove('dragover');};
+    zone.ondrop=async e=>{
+      e.preventDefault();
+      let id='';try{id=e.dataTransfer.getData('text/plain');}catch(_e){}id=id||dragLeadId;
+      suppressCardClickUntil=Date.now()+450;zone.classList.remove('dragover');
+      const lead=ALL.find(x=>String(x.id)===String(id));const newStage=normEtapa(zone.dataset.drop);
+      if(!lead||!newStage||newStage===normEtapa(lead.etapa)){clearDragState();return;}
+      if(newStage==='PERDIDO'){clearDragState();openEdit(id,true);return;}
+      try{
+        await addHistory(id,`${normEtapa(lead.etapa)} → ${newStage}`);
+        await upsertLead({...lead,etapa:newStage,ordem:orderForTop(newStage)});
+      }catch(err){console.error(err);showToast('Não foi possível mover o lead.',4000);}
+      clearDragState();
+    };
   });
 }
 
 /* ══════════════════════════════════════
    HISTÓRICO DE MOVIMENTAÇÃO
 ══════════════════════════════════════ */
-function getHistory(id){try{return JSON.parse(lsGet(`crm_hist_${id}`)||'[]');}catch{return[];}}
-function addHistory(id,action){
-  const h=getHistory(id);
-  h.push({date:nowISO(),action});
-  // manter últimas 20 entradas
-  if(h.length>20)h.shift();
-  lsSet(`crm_hist_${id}`,JSON.stringify(h));
+
+function ensureLateModal(){
+  let modal=document.getElementById('lateModalSafe');if(modal)return modal;
+  modal=document.createElement('div');modal.id='lateModalSafe';
+  const box=document.createElement('div');box.className='box';
+  const head=document.createElement('div');head.className='head';
+  const title=document.createElement('h2');title.textContent='Atrasados / Hoje';
+  const close=document.createElement('button');close.type='button';close.textContent='Fechar';close.addEventListener('click',()=>modal.classList.remove('open'));
+  head.append(title,close);const list=document.createElement('div');list.id='lateListSafe';box.append(head,list);modal.append(box);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});document.body.append(modal);return modal;
 }
-function renderHistory(id){
-  const el=document.getElementById('historyLog');if(!el)return;
-  const h=getHistory(id).slice().reverse();
-  if(!h.length){el.innerHTML='<div style="font-size:11px;color:#94A3B8;padding:4px">Nenhuma movimentação registrada.</div>';return;}
-  el.innerHTML=h.map(e=>{
-    const d=parseDate(e.date);
-    const ds=d?`${pad2(d.getDate())}/${pad2(d.getMonth()+1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`:'';
-    return`<div class="history-entry"><span class="h-date">${ds}</span><span class="h-action">${escH(e.action)}</span></div>`;
-  }).join('');
+function updateLateBadge(){const badge=document.getElementById('lateBadge');if(badge)badge.textContent=String(getOverdue().length);}
+function openLate(){
+  const modal=ensureLateModal(),list=modal.querySelector('#lateListSafe'),items=getOverdue();list.replaceChildren();
+  if(!items.length){const row=document.createElement('div');row.className='row';const name=document.createElement('b');name.textContent='Nenhum lead em atraso/hoje';const detail=document.createElement('small');detail.textContent='Não há contatos pendentes.';row.append(name,detail);list.append(row);}
+  else items.forEach(lead=>{const row=document.createElement('button');row.type='button';row.className='row';const name=document.createElement('b');name.textContent=lead.nome||'Lead';const detail=document.createElement('small');detail.textContent=`${lead.empreendimento||'Sem empreendimento'} · Próximo contato: ${lead.proximo_contato||'—'}`;row.append(name,detail);row.addEventListener('click',()=>{modal.classList.remove('open');openEdit(lead.id);});list.append(row);});
+  modal.classList.add('open');
 }
 
 /* ══════════════════════════════════════
@@ -765,13 +712,14 @@ function getOverdue(){
   const today=dayStart(new Date());
   return ALL.filter(l=>{
     const etapa=normEtapa(l.etapa);
-    if(etapa==='PERDIDO'||etapa==='STAND BY'||l.prioridade==='Fechado')return false;
+    if(etapa==='PERDIDO'||etapa==='STAND BY'||etapa==='FECHADO / GANHO')return false;
     const nc=normProx(l.proximo_contato);if(!nc)return false;
     const date=parseDate(nc);if(!date)return false;
     return dayStart(date)<=today;
   }).sort((a,b)=>(parseDate(normProx(a.proximo_contato))?.getTime()||0)-(parseDate(normProx(b.proximo_contato))?.getTime()||0));
 }
 function updateAlertBanner(){
+  updateLateBadge();
   const banner=document.getElementById('alertBanner');if(!banner)return;
   const overdue=getOverdue();
   banner.classList.toggle('show',overdue.length>0);
@@ -804,7 +752,12 @@ function leadSnap(l){
 function hasChanges(){return dlg.open&&origSnap!==null&&formSnap()!==origSnap;}
 function confirmClose(){if(!hasChanges())return true;return confirm('Alterações não salvas. Fechar mesmo assim?');}
 function closeDialog(force=false){if(!force&&!confirmClose())return false;dlg.close();editingId=null;origSnap=null;document.getElementById('aiChipResult').className='ai-result';return true;}
-function toggleMotivo(){const p=F('etapa').value==='PERDIDO';F('motivo_perda').disabled=!p;F('motivo_perda').required=p;if(!p)F('motivo_perda').value='';}
+function toggleMotivo(){
+  const lost=normEtapa(F('etapa').value)==='PERDIDO';
+  F('motivo_perda').disabled=!lost;F('motivo_perda').required=lost;
+  if(lost)F('prioridade').value='Baixa';else F('motivo_perda').value='';
+  leadForm.classList.toggle('show-mobile-motivo',lost);document.getElementById('dlg')?.classList.toggle('show-mobile-motivo',lost);
+}
 
 function fillFormSelects(){
   const fields={prioridade:LISTS.prioridade,empreendimento:LISTS.empreendimento,etapa:LISTS.etapa,origem:LISTS.origem,responsavel:LISTS.responsavel,visita:LISTS.visita,motivo_perda:LISTS.motivo_perda};
@@ -816,7 +769,7 @@ function openNew(){
   fillFormSelects();
   F('data_inicio').value=todayISO();F('proximo_contato').value='';F('nome').value='';F('telefone').value='';
   F('empreendimento').value='Outros';F('etapa').value='NOVO / INICIAL';F('prioridade').value='Baixa';
-  F('origem').value='Instagram';F('responsavel').value=LISTS.responsavel[0]||'Corretor';
+  F('origem').value=LISTS.origem[0]||'';F('responsavel').value=LISTS.responsavel[0]||'Corretor';
   F('visita').value='Não';F('motivo_perda').value='';F('observacao').value='';
   toggleMotivo();document.getElementById('attachList').innerHTML='';document.getElementById('attachHint').textContent=' Salve o lead primeiro.';document.getElementById('attachBtn').disabled=true;
   if(document.getElementById('historyLog')) document.getElementById('historyLog').innerHTML='<div style="font-size:11px;color:#94A3B8;padding:4px">Salve o lead para ver o histórico.</div>';
@@ -830,7 +783,7 @@ function openEdit(id,forcePerd=false){
   F('data_inicio').value=l.data_inicio||todayISO();F('proximo_contato').value=normProx(l.proximo_contato)||'';
   F('nome').value=l.nome||'';F('telefone').value=l.telefone||'';F('empreendimento').value=l.empreendimento||'Outros';
   F('etapa').value=forcePerd?'PERDIDO':normEtapa(l.etapa||'NOVO / INICIAL');
-  F('prioridade').value=l.prioridade||'Baixa';F('origem').value=l.origem||'Instagram';
+  F('prioridade').value=l.prioridade||'Baixa';F('origem').value=l.origem||'';
   F('responsavel').value=l.responsavel||LISTS.responsavel[0];F('visita').value=normVisita(l.visita||'Não');
   F('motivo_perda').value=normMotivo(l.motivo_perda||'');F('observacao').value=l.observacao||'';
   document.querySelectorAll('.lead-attachment-clean-chip').forEach(el=>el.remove());
@@ -855,18 +808,19 @@ function syncAttachUI(){
 function renderDashboard(){
   const el=document.getElementById('dashContent');if(!el)return;
   const today=dayStart(new Date());
-  const active=ALL.filter(l=>normEtapa(l.etapa)!=='PERDIDO');
+  const active=ALL.filter(l=>!['PERDIDO','FECHADO / GANHO'].includes(normEtapa(l.etapa)));
   const lost=ALL.filter(l=>normEtapa(l.etapa)==='PERDIDO');
+  const closedLeads=ALL.filter(l=>normEtapa(l.etapa)==='FECHADO / GANHO'&&l.data_fechamento&&l.criado_em);
+  const closed=ALL.filter(l=>normEtapa(l.etapa)==='FECHADO / GANHO').length;
   const overdue=getOverdue();
   const soon=active.filter(l=>{const nc=normProx(l.proximo_contato);if(!nc)return false;const d=dayStart(parseDate(nc));const diff=Math.floor((d-today)/86400000);return diff>0&&diff<=3;});
 
-  // Taxa de conversão
-  const total=ALL.length;const closed=ALL.filter(l=>l.prioridade==='Fechado').length;
-  const convRate=total>0?Math.round(closed/total*100):0;
+  // Conversão considera apenas oportunidades concluídas: ganhas + perdidas.
+  const finalized=closed+lost.length;
+  const convRate=finalized>0?Math.round(closed/finalized*100):0;
 
-  // Tempo médio fechamento
-  const closedLeads=ALL.filter(l=>l.prioridade==='Fechado'&&l.criado_em&&l.atualizado_em);
-  const avgDays=closedLeads.length?Math.round(closedLeads.reduce((s,l)=>{const c=parseDate(l.criado_em);const u=parseDate(l.atualizado_em);return s+(c&&u?Math.floor((u-c)/86400000):0);},0)/closedLeads.length):0;
+  // Tempo médio usa a data real de fechamento, nunca a última edição do cadastro.
+  const avgDays=closedLeads.length?Math.round(closedLeads.reduce((sum,l)=>{const created=parseDate(l.criado_em),closedAt=parseDate(l.data_fechamento);return sum+(created&&closedAt?Math.max(0,Math.floor((closedAt-created)/86400000)):0);},0)/closedLeads.length):0;
 
   // Funnel
   const funnel=['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO'];
@@ -894,7 +848,7 @@ function renderDashboard(){
     <div class="dash-stats">
       <div class="stat-card c-blue"><div class="stat-lbl">Leads Ativos</div><div class="stat-val">${active.length}</div><div class="stat-sub">Em andamento</div></div>
       <div class="stat-card c-amber"><div class="stat-lbl">Em Atraso / Hoje</div><div class="stat-val">${overdue.length}</div><div class="stat-sub">${overdue.length?'⚠️ Ação necessária':'✓ Em dia'}</div></div>
-      <div class="stat-card c-green"><div class="stat-lbl">Taxa de Conversão</div><div class="stat-val">${convRate}%</div><div class="stat-sub">${closed} fechados de ${total}</div></div>
+      <div class="stat-card c-green"><div class="stat-lbl">Taxa de Conversão</div><div class="stat-val">${convRate}%</div><div class="stat-sub">${closed} ganhos de ${finalized} concluídos</div></div>
       <div class="stat-card c-red"><div class="stat-lbl">Tempo Médio Fecham.</div><div class="stat-val">${avgDays}d</div><div class="stat-sub">${closedLeads.length} leads fechados</div></div>
     </div>
 
@@ -1069,7 +1023,7 @@ async function aiUse(){
     empreendimento,
     etapa:'NOVO / INICIAL',
     prioridade:'Baixa',
-    origem:'WhatsApp',
+    origem:LISTS.origem[0]||'',
     responsavel:LISTS.responsavel[0]||'Corretor',
     visita:'Não',
     motivo_perda:'',
@@ -1102,7 +1056,7 @@ async function saveQuickLead(){
   const prioridade=document.getElementById('qlPrioridade').value||'Baixa';
   const btn=document.getElementById('qlSaveBtn');const txt=document.getElementById('qlSaveTxt');
   btn.disabled=true;txt.innerHTML=`<span class="ql-spinner"></span> Salvando…`;
-  const ok=await upsertLead({id:cid(),ordem:orderForTop('NOVO / INICIAL'),data_inicio:todayISO(),proximo_contato:null,nome,telefone:fone.replace(/\D/g,''),empreendimento:'Outros',etapa:'NOVO / INICIAL',prioridade,origem:'Instagram',responsavel:LISTS.responsavel[0]||'Corretor',visita:'Não',motivo_perda:'',observacao:'',criado_em:nowISO(),atualizado_em:nowISO()});
+  const ok=await upsertLead({id:cid(),ordem:orderForTop('NOVO / INICIAL'),data_inicio:todayISO(),proximo_contato:null,nome,telefone:fone.replace(/\D/g,''),empreendimento:'Outros',etapa:'NOVO / INICIAL',prioridade,origem:LISTS.origem[0]||'',responsavel:LISTS.responsavel[0]||'Corretor',visita:'Não',motivo_perda:'',observacao:'',criado_em:nowISO(),atualizado_em:nowISO()});
   if(ok){closeQuickLead();showToast(`Lead "${nome}" salvo! ⚡`);switchView('kanban');}
   else{btn.disabled=false;txt.textContent='✅ Salvar Lead';}
 }
@@ -1116,7 +1070,7 @@ let agSelDay=null;
 let AG_CACHE=[];
 
 function agKey(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
-function agMapRow(r){return{id:String(r.id),date:String(r.data||''),time:String(r.hora||'').slice(0,5),desc:String(r.descricao||''),notify:Number(r.notify||0)};}
+function agMapRow(r){return{id:String(r.id),lead_id:r.lead_id?String(r.lead_id):'',date:String(r.data||''),time:String(r.hora||'').slice(0,5),desc:String(r.descricao||''),notify:Number(r.notify||0)};}
 function agAll(){return Array.isArray(AG_CACHE)?AG_CACHE:[];}
 function agTodayKey(){const n=new Date();return agKey(n.getFullYear(),n.getMonth(),n.getDate());}
 function agParseDate(dateKey,time='00:00'){
@@ -1144,7 +1098,7 @@ function agSortEvents(a,b){
 }
 async function agLoad(){
   try{
-    const d=await sbFetch(`${AG_TBL}?select=id,data,hora,descricao,notify&order=data.asc,hora.asc`);
+    const d=await sbFetch(`${AG_TBL}?select=id,lead_id,data,hora,descricao,notify&order=data.asc,hora.asc`);
     AG_CACHE=(Array.isArray(d)?d:[]).map(agMapRow);
     return AG_CACHE;
   }catch(e){
@@ -1173,6 +1127,7 @@ async function openAgenda(){
   await agLoad();
   const n=new Date();agYear=n.getFullYear();agMonth=n.getMonth();agSelDay=agKey(agYear,agMonth,n.getDate());
   setAgendaDefaultTime();syncAgDateInput();
+  const leadSel=document.getElementById('agLead');if(leadSel){leadSel.innerHTML='<option value="">Sem vínculo</option>'+ALL.filter(l=>normEtapa(l.etapa)!=='PERDIDO').map(l=>`<option value="${escH(l.id)}">${escH(l.nome)}${l.empreendimento?' — '+escH(l.empreendimento):''}</option>`).join('');if(SELECTED_LEAD_ID)leadSel.value=SELECTED_LEAD_ID;}
   renderAgenda();
   document.getElementById('agModal').classList.add('open');
 }
@@ -1248,22 +1203,23 @@ function renderAgDay(){
   el.innerHTML=evts.map(e=>`<div class="ag-event-card">
       <div class="ag-event-time"><strong class="${e.time?'':'ag-time-empty'}">${e.time||'Sem hora'}</strong><span>${key===agTodayKey()?'Hoje':parts[2]+'/'+parts[1]}</span></div>
       <div class="ag-event-main">
-        <div class="ag-event-main-title">${escH(e.desc)}</div>
+        <div class="ag-event-main-title">${escH(e.desc)}</div>${e.lead_id?`<div class="ag-event-main-desc">Lead: ${escH(ALL.find(l=>String(l.id)===String(e.lead_id))?.nome||'Vínculo removido')}</div>`:''}
         <div class="ag-event-main-desc">Compromisso agendado para ${parts[2]}/${parts[1]}/${parts[0]} ${e.time?'às '+e.time:'sem horário'}.</div>
         <div class="ag-event-main-meta"><span class="ag-mini-tag">Agenda</span></div>
       </div>
       <div class="ag-event-actions">
-        <button class="ag-action-btn primary" onclick="agUseDate('${e.date}','${e.time}',${JSON.stringify(String(e.desc))})">Reagendar</button>
+        <button class="ag-action-btn primary" data-ag-reuse="1" data-date="${escH(e.date)}" data-time="${escH(e.time)}" data-desc="${encodeURIComponent(String(e.desc||''))}">Reagendar</button>
         <button class="ag-action-btn danger" onclick="agDelete('${e.id}')">Remover</button>
       </div>
     </div>`).join('');
+  el.querySelectorAll('[data-ag-reuse]').forEach(btn=>btn.addEventListener('click',()=>agUseDate(btn.dataset.date,btn.dataset.time,btn.dataset.desc)));
 }
 
 function agUseDate(date,time,desc){
   agSelDay=date;syncAgDateInput();
   const dateInp=document.getElementById('agDate'); if(dateInp)dateInp.value=date||'';
   const timeInp=document.getElementById('agTime'); if(timeInp)timeInp.value=time||'';
-  const descInp=document.getElementById('agDesc'); if(descInp)descInp.value=desc||'';
+  const descInp=document.getElementById('agDesc'); if(descInp)descInp.value=decodeURIComponent(desc||'');
   syncAgNotifyState();
   renderAgenda();
 }
@@ -1321,9 +1277,9 @@ async function agAdd(){
   const desc=document.getElementById('agDesc').value.trim();
   if(!desc){alert('Preencha a descrição do compromisso.');return;}
   const notify=time ? Number(document.getElementById('agNotify').value||0) : 0;
-  if(time&&notify!==0&&'Notification' in window&&Notification.permission==='default'){try{await Notification.requestPermission();}catch(e){}}
+  if(time&&notify!==0&&'Notification' in window){try{if(Notification.permission==='default')await Notification.requestPermission();if(Notification.permission==='granted')await ensurePushSubscription();}catch(e){console.warn('Push indisponível, usando lembrete local.',e);}}
   try{
-    const body={data:date,descricao:desc,notify,access_user_id:ACCESS_USER.id};
+    const body={data:date,descricao:desc,notify,access_user_id:ACCESS_USER.id,lead_id:document.getElementById('agLead')?.value||null};
     if(time) body.hora=time;
     else body.hora=null;
     const ins=await sbFetch(AG_TBL,{method:'POST',body});
@@ -1358,7 +1314,7 @@ async function scheduleNotif(dateKey,time,desc,minutesBefore,id){
     try{const reg=await navigator.serviceWorker?.ready;if(reg)await reg.showNotification(desc,options);else new Notification(desc,options);}catch(e){try{new Notification(desc,options);}catch(_){}}
     NOTIFICATION_TIMERS.delete(String(id));
   };
-  const max=2147483647;
+  const max=24*60*60*1000;
   if(delay<=max)NOTIFICATION_TIMERS.set(String(id),setTimeout(fire,delay));
 }
 function clearScheduledNotif(id){
@@ -1421,12 +1377,6 @@ function renderAdmin(tab){
   }
   if(tab==='access'){loadAccessAdmin();}
 }
-function addResp(){const n=(document.getElementById('newRespNome').value||'').trim();if(!n){alert('Informe o nome.');return;}const f=(document.getElementById('newRespFone').value||'').trim();const c=(document.getElementById('newRespCreci').value||'').trim();const items=getAdminResp();if(items.some(x=>(x.nome||x)===n)){alert('Já existe.');return;}items.push({id:cid(),nome:n,fone:f,creci:c});lsSet('crm_resp',JSON.stringify(items));LISTS.responsavel=items.map(x=>x.nome||x);document.getElementById('newRespNome').value='';document.getElementById('newRespFone').value='';document.getElementById('newRespCreci').value='';renderAdmin('responsaveis');syncFilterSelects();showToast('Corretor adicionado.');}
-function removeResp(i){const items=getAdminResp();if(!confirm(`Remover "${items[i].nome||items[i]}"?`))return;items.splice(i,1);lsSet('crm_resp',JSON.stringify(items));LISTS.responsavel=items.map(x=>x.nome||x);renderAdmin('responsaveis');syncFilterSelects();showToast('Removido.');}
-function addEmp(){const n=(document.getElementById('newEmpNome').value||'').trim();if(!n){alert('Informe o nome.');return;}const t=document.getElementById('newEmpTipo').value;const v=(document.getElementById('newEmpValor').value||'').trim();const s=document.getElementById('newEmpStatus').value;const items=getAdminEmps();if(items.some(x=>(x.nome||x)===n)){alert('Já existe.');return;}items.push({id:cid(),nome:n,tipo:t,valor:v,status:s});lsSet('crm_emp',JSON.stringify(items));LISTS.empreendimento=items.map(x=>x.nome||x);document.getElementById('newEmpNome').value='';renderAdmin('imoveis');syncFilterSelects();showToast('Imóvel adicionado.');}
-function removeEmp(i){const items=getAdminEmps();if(!confirm(`Remover "${items[i].nome||items[i]}"?`))return;items.splice(i,1);lsSet('crm_emp',JSON.stringify(items));LISTS.empreendimento=items.map(x=>x.nome||x);renderAdmin('imoveis');syncFilterSelects();showToast('Removido.');}
-function addOrig(){const n=(document.getElementById('newOrigNome').value||'').trim();if(!n){alert('Informe a origem.');return;}const items=getAdminOrigs();if(items.includes(n)){alert('Já existe.');return;}items.push(n);lsSet('crm_orig',JSON.stringify(items));LISTS.origem=items;document.getElementById('newOrigNome').value='';renderAdmin('origens');syncFilterSelects();showToast('Origem adicionada.');}
-function removeOrig(i){const items=getAdminOrigs();if(!confirm(`Remover "${items[i]}"?`))return;items.splice(i,1);lsSet('crm_orig',JSON.stringify(items));LISTS.origem=items;renderAdmin('origens');syncFilterSelects();showToast('Removido.');}
 
 
 function goHomeFromLogo(){
@@ -1478,6 +1428,7 @@ function openLeadInModule(name){
 
 function switchView(name){
   currentView=name;
+  document.body.classList.toggle('view-direciona-active',name==='direciona');
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-tab[data-view]').forEach(t=>t.classList.remove('active'));
   document.getElementById(`view-${name}`)?.classList.add('active');
@@ -1580,12 +1531,13 @@ async function importCSV(text){
     try{
       const phone=String(r.telefone||r.fone||'').replace(/\D/g,'');
       const existing=ALL.find(x=>(r.id&&String(x.id)===String(r.id))||(phone&&String(x.telefone||'').replace(/\D/g,'')===phone)||String(x.nome||'').trim().toLowerCase()===String(r.nome||'').trim().toLowerCase());
-      const etapa=normEtapa(r.etapa||'NOVO / INICIAL');
+      const legacyClosed=String(r.prioridade||'').trim()==='Fechado';
+      const etapa=legacyClosed?'FECHADO / GANHO':normEtapa(r.etapa||'NOVO / INICIAL');
       const payload={
         id:existing?.id||cid(),ordem:Number(r.ordem)||existing?.ordem||orderForTop(etapa),
         data_inicio:normProx(r.data_inicio)||existing?.data_inicio||todayISO(),proximo_contato:normProx(r.proximo_contato),
         nome:String(r.nome||'').trim(),telefone:phone,empreendimento:String(r.empreendimento||'Outros').trim()||'Outros',
-        etapa,prioridade:LISTS.prioridade.includes(r.prioridade)?r.prioridade:'Baixa',origem:String(r.origem||'WhatsApp').trim()||'WhatsApp',
+        etapa,prioridade:legacyClosed?'Alta':(LISTS.prioridade.includes(r.prioridade)?r.prioridade:'Baixa'),origem:String(r.origem||'').trim(),
         responsavel:String(r.responsavel||LISTS.responsavel[0]||'').trim(),visita:normVisita(r.visita),
         motivo_perda:etapa==='PERDIDO'?(normMotivo(r.motivo_perda)||'Outro'):'',observacao:String(r.observacao||'').trim(),
         criado_em:existing?.criado_em||r.criado_em||nowISO(),atualizado_em:nowISO()
@@ -1662,7 +1614,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=39');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=40');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1707,6 +1659,7 @@ document.addEventListener('click',e=>{
 document.querySelectorAll('.nav-tab[data-view]').forEach(t=>t.addEventListener('click',()=>switchView(t.dataset.view)));
 const agendaTop=document.getElementById('agendaTabBtn'); if(agendaTop) agendaTop.addEventListener('click',openAgenda);
 const agendaSide=document.getElementById('agendaTabBtnSide'); if(agendaSide) agendaSide.addEventListener('click',openAgenda);
+const lateSide=document.getElementById('lateSafeBtn'); if(lateSide) lateSide.addEventListener('click',openLate);
 function syncSidebarUtilityState(){
   const themeMap={'t-light':'Claro','t-dark':'Escuro','t-navy':'Azul','t-direciona':'Direciona'};
   const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
@@ -1879,6 +1832,37 @@ document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>
 bindEl('boxPerdidos','click',()=>{SHOW_LOST=!SHOW_LOST;render();});
 const btnSalvarAcesso=document.getElementById('btnSalvarAcesso'); if(btnSalvarAcesso) btnSalvarAcesso.addEventListener('click',saveAccessUser);
 
+let voiceRecognition=null;
+let voiceRecording=false;
+let voiceManualStop=false;
+let voiceSeen=new Set();
+function normalizeVoiceText(text){return String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
+function setVoiceButton(active){const btn=document.getElementById('btnGravarAtendimento');if(!btn)return;btn.classList.toggle('is-recording',active);btn.textContent=active?'⏹️ Parar':'🎙️ Gravar';}
+function appendVoiceObservation(text){
+  text=String(text||'').trim();if(!text)return;const field=F('observacao');const current=String(field.value||'');
+  const prefix=!current.trim()?`${obsPfx()} - `:'';field.value=current+(current&&!/[\s\n]$/.test(current)?' ':'')+prefix+text;field.focus();field.setSelectionRange?.(field.value.length,field.value.length);
+}
+function createVoiceRecognition(){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SpeechRecognition){alert('A transcrição por voz exige Chrome ou outro navegador compatível.');return null;}
+  const recognition=new SpeechRecognition();recognition.lang='pt-BR';recognition.continuous=true;recognition.interimResults=false;recognition.maxAlternatives=1;
+  recognition.onresult=event=>{for(let i=event.resultIndex;i<event.results.length;i++){if(!event.results[i].isFinal)continue;const text=event.results[i][0]?.transcript||'';const key=normalizeVoiceText(text);if(!key||voiceSeen.has(key))continue;voiceSeen.add(key);appendVoiceObservation(text);}};
+  recognition.onerror=event=>{if(event?.error==='not-allowed'){voiceRecording=false;voiceManualStop=true;setVoiceButton(false);}};
+  recognition.onend=()=>{voiceRecognition=null;if(voiceRecording&&!voiceManualStop)setTimeout(()=>startVoiceRecognition(true),250);else{voiceRecording=false;voiceManualStop=false;setVoiceButton(false);}};
+  return recognition;
+}
+function startVoiceRecognition(keepSeen=false){
+  if(!keepSeen)voiceSeen=new Set();voiceRecognition=createVoiceRecognition();if(!voiceRecognition)return;
+  try{voiceRecognition.start();voiceRecording=true;voiceManualStop=false;setVoiceButton(true);}catch(err){voiceRecording=false;setVoiceButton(false);console.warn(err);}
+}
+function stopVoiceRecognition(){voiceManualStop=true;voiceRecording=false;setVoiceButton(false);try{voiceRecognition?.stop();}catch(_e){}}
+function installVoiceRecognition(){
+  const btn=document.getElementById('btnGravarAtendimento');if(!btn||btn.dataset.voiceReady==='1')return;btn.dataset.voiceReady='1';btn.addEventListener('click',()=>voiceRecording?stopVoiceRecognition():startVoiceRecognition());
+}
+function normalizeStaticUi(){
+  const search=document.getElementById('searchQ');if(search)search.placeholder='Busca...';
+  const quick=document.getElementById('btnNovoAtendimento');if(quick)quick.textContent='Atendimento';
+}
+
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
@@ -1901,6 +1885,9 @@ function initApp(){
   syncMobileFiltersFromDesktop();
   refreshFilterButtonLabels();
   setupPaste();
+  installVoiceRecognition();
+  normalizeStaticUi();
+  updateLateBadge();
   setupPWA();
   registerSW();
   applyTheme('t-light');
@@ -1983,7 +1970,7 @@ function isTextFile(file){
   return type.startsWith('text/')||name.endsWith('.txt');
 }
 function readTextFile(file){
-  return new Promise((ok,no)=>{let r=new FileReader();r.onload=()=>ok(String(r.result||'').slice(0,12000));r.onerror=no;r.readAsText(file)});
+  return new Promise((ok,no)=>{let r=new FileReader();r.onload=()=>{const full=String(r.result||'');const safe=full.length<=50000?full:(full.slice(0,10000)+'\n\n[...trecho intermediário reduzido para caber na análise...]\n\n'+full.slice(-40000));ok(safe);};r.onerror=no;r.readAsText(file)});
 }
 async function addFileToContent(content,file,label){
   const mime=guessMime(file);
@@ -2006,22 +1993,18 @@ let msg=($("clientMessage")?.value||"").trim();
 if(!msg&&!historyFiles.length&&!lastFile){alert("Cole uma observação, anexe contexto ou a última conversa.");status("Falta mensagem, contexto ou última conversa.");return null}
 let retomada=mode==="retomada";
 let prompt=retomada?
-`Você é especialista em vendas imobiliárias de alto padrão e retomada por WhatsApp.
-Tarefa: gerar SOMENTE mensagens de retomada para o corretor enviar ao cliente.
-Use CONTEXTO + ÚLTIMA CONVERSA, dando prioridade máxima absoluta à última conversa.
-A retomada deve continuar exatamente do ponto onde a conversa parou, sem parecer mensagem genérica.
-Se houver análise prévia, use como apoio, mas não repita diagnóstico interno.
+`Você é um corretor imobiliário experiente e precisa redigir três mensagens de retomada para WhatsApp.
+A ÚLTIMA CONVERSA tem prioridade absoluta. Continue exatamente do ponto em que parou.
+Antes de redigir, identifique internamente: quem falou por último, último compromisso do cliente, informação prometida pelo corretor, produto principal, produtos paralelos, objeção real, pendência financeira, quem deve agir, etapa comercial e nível de interesse.
 Responda APENAS JSON válido:
-{"situacao":"curta","temperatura":"Frio|Morno|Quente","perfil":"curto","risco":"curto","objetivo":"curto","proximo_passo":"curto","evitar":"curto","retomadas":[{"label":"Premium","texto":"mensagem pronta para WhatsApp","dica":"curta"},{"label":"Direta","texto":"mensagem pronta para WhatsApp","dica":"curta"},{"label":"Consultiva","texto":"mensagem pronta para WhatsApp","dica":"curta"}]}
-Regras: português brasileiro, natural, elegante, blocos curtos, sem inventar dados, sem usar "faz sentido", sem pressionar grosseiramente.`:
-`Você é especialista em vendas imobiliárias de alto padrão.
-Tarefa: fazer ANÁLISE INTERNA ESTRATÉGICA do lead para orientar o corretor.
-NÃO gere mensagem pronta para o cliente neste botão.
-A análise precisa ser útil comercialmente, específica e baseada no que aparece na conversa.
-Identifique: momento atual da negociação, objeção real, intenção provável, nível de interesse, risco de abordagem errada e próximo movimento específico.
+{"situacao":"curta","temperatura":"Frio|Morno|Quente","perfil":"curto","risco":"curto","objetivo":"curto","proximo_passo":"curto","evitar":"curto","ultimo_falante":"cliente|corretor|indefinido","ultimo_compromisso_cliente":"curto","informacao_prometida":"curto","produto_principal":"curto","produtos_paralelos":"curto","objecao":"curto","pendencia_financeira":"curto","proxima_acao_de":"cliente|corretor|indefinido","etapa_comercial":"descoberta|interesse|comparação|análise financeira|negociação|decisão","nivel_interesse":"Baixo|Médio|Alto","retomadas":[{"label":"Principal","texto":"mensagem pronta","dica":"curta"},{"label":"Direta","texto":"mensagem pronta","dica":"curta"},{"label":"Consultiva","texto":"mensagem pronta","dica":"curta"}]}
+Regras obrigatórias das mensagens: português brasileiro natural; máximo aproximado de 400 caracteres por opção; sem emojis; apenas uma pergunta principal; não usar “faz sentido”, “fiquei pensando”, “estive pensando”, “ainda tem interesse?” ou retomadas genéricas; usar a pendência real como gancho; não pressionar; não dar saída fácil; manter o produto principal e só depois abrir alternativas; não inventar dados.`:
+`Você é um analista comercial imobiliário. Faça uma análise interna específica e fundamentada na conversa.
+NÃO gere mensagem pronta ao cliente.
+Identifique obrigatoriamente: 1) quem falou por último; 2) último compromisso do cliente; 3) informação prometida pelo corretor; 4) produto principal; 5) produtos paralelos; 6) objeção relevante; 7) pendência financeira; 8) quem deve dar o próximo passo; 9) etapa comercial; 10) nível de interesse e motivo.
 Responda APENAS JSON válido:
-{"situacao":"diagnóstico específico da conversa em 1 frase","temperatura":"Frio|Morno|Quente","perfil":"perfil comercial provável, com motivo","risco":"Baixo|Médio|Alto + motivo","objetivo":"o que o corretor deve buscar agora","proximo_passo":"ação prática e específica para o próximo contato","evitar":"o que o corretor deve evitar nesta negociação","respostas":[]}
-Regras: português brasileiro, consultivo, direto, sem texto de WhatsApp, sem inventar dados, sem usar "faz sentido", não seja vago.`;
+{"situacao":"diagnóstico em 1 frase","temperatura":"Frio|Morno|Quente","perfil":"perfil e motivo","risco":"Baixo|Médio|Alto + motivo","objetivo":"objetivo imediato","proximo_passo":"ação específica","evitar":"erro a evitar","ultimo_falante":"cliente|corretor|indefinido","ultimo_compromisso_cliente":"curto","informacao_prometida":"curto","produto_principal":"curto","produtos_paralelos":"curto","objecao":"curto","pendencia_financeira":"curto","proxima_acao_de":"cliente|corretor|indefinido","etapa_comercial":"descoberta|interesse|comparação|análise financeira|negociação|decisão","nivel_interesse":"Baixo|Médio|Alto","respostas":[]}
+Regras: português brasileiro, direto, sem inventar dados, sem usar “faz sentido”, sem generalidades.`;
 let content=[{type:"text",text:prompt+"\n\nObservação do corretor:\n"+(msg||"Sem observação.")+"\n\nAnálise prévia disponível:\n"+(lastAnalysis?JSON.stringify(lastAnalysis):"Nenhuma.")+"\n\nPrints de contexto são histórico. Última conversa é prioridade máxima."}];
 for(let f of historyFiles){await addFileToContent(content,f,"PRINT DE CONTEXTO")}
 if(lastFile){await addFileToContent(content,lastFile,"ÚLTIMA CONVERSA / PRIORIDADE MÁXIMA")}
@@ -2030,8 +2013,8 @@ if(!res.ok)throw new Error(await res.text().catch(()=>("HTTP "+res.status)));
 let j=await res.json();let txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:"").trim();let parsed;try{parsed=JSON.parse(txt)}catch(e){let m=txt.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0])}if(!parsed)throw new Error("A IA não retornou JSON válido.");return parsed}
 function reading(d){$("analysisSituation").textContent=d.situacao||"Análise concluída.";$("analysisHeat").textContent=d.temperatura||"—";$("analysisProfile").textContent=d.perfil||"—";$("analysisRisk").textContent=d.risco||"—";$("analysisGoal").textContent=d.objetivo||"—";$("analysisNext").textContent=d.proximo_passo||"—";let a=$("analysisAvoid");if(a&&d.evitar){a.style.display="block";a.textContent="Evitar: "+d.evitar}}
 function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.length){area.innerHTML='<div class="dia-empty">'+esc(empty)+'</div>';return}area.innerHTML=items.map((r,i)=>`<div class="dia-response"><div class="dia-response-head"><div class="dia-response-label">${esc(r.label||("Opção "+(i+1)))}</div><button class="dia-copy" type="button" data-copy="${encodeURIComponent(r.texto||"")}">Copiar</button></div><p>${esc(r.texto||"")}</p>${r.dica?`<div class="dia-tip">${esc(r.dica)}</div>`:""}</div>`).join("")}
-async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");status("Análise interna concluída.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
-async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");status("Retomada gerada.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
+async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");await window.persistAiResult?.("analise",d,($('clientMessage')?.value||''));status("Análise interna concluída e salva.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
+async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");await window.persistAiResult?.("retomada",d,($('clientMessage')?.value||''));status("Retomada gerada e salva.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
 function clearAll(){historyFiles=[];lastFile=null;lastAnalysis=null;if($("clientMessage"))$("clientMessage").value="";if($("historyPrintInput"))$("historyPrintInput").value="";if($("lastPrintInput"))$("lastPrintInput").value="";counts();status("Aguardando mensagem, contexto ou última conversa.");$("analysisSituation").textContent="Cole uma mensagem ou anexe prints.";$("analysisHeat").textContent="—";$("analysisProfile").textContent="—";$("analysisRisk").textContent="—";$("analysisGoal").textContent="—";$("analysisNext").textContent="—";let a=$("analysisAvoid");if(a){a.style.display="none";a.textContent=""}$("analysisResponses").innerHTML='<div class="dia-empty">A análise aparecerá aqui.</div>';$("retomadaOutput").innerHTML='<div class="dia-empty">A retomada aparecerá aqui.</div>'}
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="historyPrintInput"){historyFiles=historyFiles.concat(Array.from(e.target.files||[]));e.target.value="";counts();status(historyFiles.length+" print(s) de contexto anexado(s).")}if(e.target&&e.target.id==="lastPrintInput"){lastFile=(e.target.files&&e.target.files[0])?e.target.files[0]:null;e.target.value="";counts();status(lastFile?"Última conversa anexada.":"Nenhuma última conversa anexada.")}});
 document.addEventListener("click",e=>{let rm=e.target.closest(".dia-file-remove");if(rm){let kind=rm.dataset.kind;if(kind==="history"){historyFiles.splice(Number(rm.dataset.index),1)}else{lastFile=null}counts();status("Anexo removido.");return}let c=e.target.closest(".dia-copy");if(c){let t=decodeURIComponent(c.getAttribute("data-copy")||"");navigator.clipboard.writeText(t).then(()=>{c.textContent="Copiado";setTimeout(()=>c.textContent="Copiar",1200)});return}if(e.target&&e.target.id==="btnAiAnalyzeMain")analyze();if(e.target&&e.target.id==="btnRetomadaMain")retomada();if(e.target&&e.target.id==="btnClearAnalyzer")clearAll()});
@@ -2040,144 +2023,8 @@ setTimeout(updateFlowHint,600);
 })();
 
 
-/* ===== direciona-view-state ===== */
-(function(){
-  function updateDireciona(){
-    const d = document.getElementById('view-direciona');
-    const active = !!d && (d.classList.contains('active') || d.style.display === 'block' || getComputedStyle(d).display !== 'none');
-    document.body.classList.toggle('view-direciona-active', active);
-  }
-  const oldSwitch = window.switchView;
-  if(typeof oldSwitch === 'function' && !oldSwitch.__safeRecoveryWrapped){
-    const wrapped = function(){
-      const r = oldSwitch.apply(this, arguments);
-      setTimeout(updateDireciona, 0);
-      setTimeout(updateDireciona, 150);
-      return r;
-    };
-    wrapped.__safeRecoveryWrapped = true;
-    window.switchView = wrapped;
-  }
-  document.addEventListener('click', function(){ setTimeout(updateDireciona, 80); }, true);
-  window.addEventListener('load', function(){ setTimeout(updateDireciona, 800); });
-})();
+/* ===== Progresso visual das análises de IA ===== */
 
-
-
-
-
-
-
-
-/* ===== levecrm-safe-ui-v31-js ===== */
-(function(){
-  function safe(fn){try{fn()}catch(e){console.warn('LeveCRM ajuste seguro ignorado:',e)}}
-  function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-
-  function oneLupa(){
-    var inp=document.getElementById('searchQ') || Array.from(document.querySelectorAll('input')).find(i=>/busca|buscar|search/i.test(i.placeholder||''));
-    if(!inp || inp.dataset.oneLupaOk)return;
-    inp.placeholder='Busca...';
-    var p=inp.parentElement;
-    if(p){
-      var icons=Array.from(p.querySelectorAll('span,i,svg,button')).filter(el=>/🔎|🔍/.test(el.textContent||'')||/search|lupa|magnif/i.test(String(el.className||'')));
-      icons.slice(1).forEach(el=>el.style.display='none');
-    }
-    inp.dataset.oneLupaOk='1';
-  }
-
-  function touchedToday(){
-    var d=new Date(),dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0');
-    document.querySelectorAll('.card').forEach(function(c){
-      var t=norm(c.innerText);
-      c.classList.toggle('touched-today',t.includes('hoje')||t.includes(dd+'/'+mm));
-    });
-  }
-
-  function ensureLateModal(){
-    if(document.getElementById('lateModalSafe'))return;
-    var m=document.createElement('div');
-    m.id='lateModalSafe';
-    m.innerHTML='<div class="box"><div class="head"><h2>Atrasados / Hoje</h2><button type="button" id="lateCloseSafe">Fechar</button></div><div id="lateListSafe"></div></div>';
-    document.body.appendChild(m);
-    var close=document.getElementById('lateCloseSafe');
-    if(close)close.onclick=function(){m.classList.remove('open')};
-    m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open')});
-  }
-
-  function getLate(){
-    if(typeof getOverdue==='function') return getOverdue();
-    return [];
-  }
-
-  function openLate(){
-    ensureLateModal();
-    var modal=document.getElementById('lateModalSafe'),list=document.getElementById('lateListSafe');
-    if(!modal||!list)return;
-    var items=getLate();
-    list.innerHTML=items.length?items.map(function(l){
-      var nome=String(l.nome||'Lead');
-      var emp=String(l.empreendimento||'');
-      var pc=String(l.proximo_contato||'');
-      return '<div class="row" data-id="'+l.id+'"><b>'+nome+'</b><small>'+emp+' · Próximo contato: '+pc+'</small></div>';
-    }).join(''):'<div class="row"><b>Nenhum lead em atraso/hoje</b><small>Não há contatos pendentes.</small></div>';
-    list.querySelectorAll('[data-id]').forEach(function(row){
-      row.onclick=function(){
-        modal.classList.remove('open');
-        if(typeof openEdit==='function')openEdit(row.getAttribute('data-id'));
-      };
-    });
-    modal.classList.add('open');
-  }
-
-  function ensureMenu(){
-    if(document.getElementById('lateSafeBtn')) {
-      var b=document.querySelector('#lateSafeBtn .nav-badge');
-      if(b)b.textContent=String(getLate().length);
-      return;
-    }
-    var agenda=document.getElementById('agendaTabBtnSide');
-    if(!agenda||!agenda.parentElement)return;
-    var btn=document.createElement('button');
-    btn.className='nav-tab';
-    btn.id='lateSafeBtn';
-    btn.type='button';
-    btn.innerHTML='<span>⏰</span><span class="side-label">Atrasados</span><span class="nav-badge">'+String(getLate().length)+'</span>';
-    btn.onclick=openLate;
-    agenda.parentElement.insertBefore(btn,agenda.nextSibling);
-  }
-
-  function moreLayer(){
-    var wrap=document.getElementById('moreWrap'),menu=document.getElementById('moreMenu'),btn=document.getElementById('moreToggle');
-    if(!wrap||!menu||!btn)return;
-    menu.style.zIndex='1000000';
-    if(!btn.dataset.safeMore){
-      btn.dataset.safeMore='1';
-      btn.addEventListener('click',function(){
-        setTimeout(function(){
-          if(wrap.classList.contains('open')){
-            var r=btn.getBoundingClientRect();
-            menu.style.position='fixed';
-            menu.style.top=(r.bottom+8)+'px';
-            menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-230))+'px';
-            menu.style.right='auto';
-          }
-        },0);
-      },true);
-    }
-  }
-
-  function run(){
-    safe(oneLupa);safe(touchedToday);safe(ensureMenu);safe(moreLayer);
-  }
-  window.addEventListener('load',function(){setTimeout(run,600)});
-  document.addEventListener('click',function(){setTimeout(run,100)},true);
-  document.addEventListener('input',function(){setTimeout(run,100)},true);
-  setInterval(run,1500);
-})();
-
-
-/* ===== levecrm-ai-progress-v1-js ===== */
 (function(){
   let progressTimer = null;
   let progressValue = 0;
@@ -2319,104 +2166,9 @@ setTimeout(updateFlowHint,600);
   window.leveHideLoading = function(){ finish(); };
   window.hideAiLoading = function(){ finish(); };
 
-  // Cancelamento também para a função do Supabase usada pelo Direciona.
-  const originalFetch = window.fetch;
-  if(typeof originalFetch === 'function' && !originalFetch.__leveProgressWrapped){
-    const wrapped = function(input, init){
-      const rawUrl = typeof input === 'string' ? input : (input && input.url) ? input.url : '';
-      const url = String(rawUrl || '');
-      const isDireciona = url.includes('/functions/v1/direciona-openai') || url.includes('direciona-openai');
-      if(isDireciona){
-        try{
-          window.leveAiAbortController = new AbortController();
-          init = init || {};
-          init.signal = window.leveAiAbortController.signal;
-        }catch(e){}
-      }
-      return originalFetch.call(this, input, init).finally(function(){
-        if(isDireciona) window.leveAiAbortController = null;
-      });
-    };
-    wrapped.__leveProgressWrapped = true;
-    window.fetch = wrapped;
-  }
-
-  document.addEventListener('click', function(e){
-    const cancel = e.target.closest && e.target.closest('.ai-load-cancel');
-    if(cancel){
-      try{
-        if(window.leveAiAbortController){
-          window.leveAiAbortController.abort();
-          window.leveAiAbortController = null;
-        }
-      }catch(err){}
-      finish('cancel');
-    }
-  }, true);
 })();
 
 
-
-
-/* ===== patch-dnd-robusto-2804 ===== */
-(function(){
-  var dragId = null;
-  var suppressClickUntil = 0;
-  function clearDragging(){
-    document.querySelectorAll('.card.dragging').forEach(function(c){ c.classList.remove('dragging'); });
-    document.querySelectorAll('.dropzone.dragover').forEach(function(z){ z.classList.remove('dragover'); });
-  }
-  function moveLeadTo(id, etapaDestino){
-    if(!id || !Array.isArray(window.ALL)) return;
-    var lead = window.ALL.find(function(x){ return String(x.id) === String(id); });
-    if(!lead) return;
-    var newE = window.normEtapa ? window.normEtapa(etapaDestino) : etapaDestino;
-    var oldE = window.normEtapa ? window.normEtapa(lead.etapa) : lead.etapa;
-    if(newE === oldE) return;
-    if(newE === 'PERDIDO'){
-      if(typeof window.openEdit === 'function') window.openEdit(id,true);
-      return;
-    }
-    try{ if(typeof window.addHistory === 'function') window.addHistory(id, oldE + ' → ' + newE); }catch(e){}
-    var ordem = (typeof window.orderForTop === 'function') ? window.orderForTop(newE) : Date.now();
-    if(typeof window.upsertLead === 'function') window.upsertLead(Object.assign({}, lead, {etapa:newE, ordem:ordem}));
-  }
-  window.wireDnD = function(){
-    document.querySelectorAll('.card[data-id]').forEach(function(c){
-      c.setAttribute('draggable','true');
-      c.ondragstart = function(e){
-        dragId = c.dataset.id;
-        c.classList.add('dragging');
-        suppressClickUntil = Date.now() + 450;
-        try{ e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); }catch(err){}
-      };
-      c.ondragend = function(){ suppressClickUntil = Date.now() + 450; clearDragging(); dragId = null; };
-      c.onclick = function(e){
-        if(Date.now() < suppressClickUntil) return;
-        if(e.target.closest('.wa-btn')) return;
-        if(typeof window.openEdit === 'function') window.openEdit(c.dataset.id);
-      };
-    });
-    document.querySelectorAll('.dropzone').forEach(function(z){
-      z.ondragover = function(e){ e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(err){} z.classList.add('dragover'); };
-      z.ondragenter = function(e){ e.preventDefault(); z.classList.add('dragover'); };
-      z.ondragleave = function(e){ if(!z.contains(e.relatedTarget)) z.classList.remove('dragover'); };
-      z.ondrop = function(e){
-        e.preventDefault();
-        var id = '';
-        try{ id = e.dataTransfer.getData('text/plain'); }catch(err){}
-        id = id || dragId;
-        z.classList.remove('dragover');
-        suppressClickUntil = Date.now() + 450;
-        moveLeadTo(id, z.dataset.drop);
-        clearDragging();
-        dragId = null;
-      };
-    });
-  };
-  document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ try{ window.wireDnD(); }catch(e){} }, 250); });
-  window.addEventListener('load', function(){ setTimeout(function(){ try{ window.wireDnD(); }catch(e){} }, 600); });
-})();
 
 
 /* Reorganiza automaticamente quando alternar entre desktop e mobile */
@@ -2432,127 +2184,201 @@ window.addEventListener('resize',()=>{
 
 
 
-/* ===== levecrm-patch-3004-mobile-premium-audio-script ===== */
-(function(){
-  function byId(id){return document.getElementById(id)}
-  function isMob(){return window.matchMedia&&window.matchMedia('(max-width: 640px)').matches}
-  function getEtapa(v){try{return normEtapa(v)}catch(e){return String(v||'').trim().toUpperCase()}}
-  function setSelValue(sel,val){if(!sel)return; sel.value=val; if(sel.value!==val){var o=document.createElement('option');o.value=val;o.textContent=val;sel.appendChild(o);sel.value=val;}}
-  function applyPerdidoRules(){
-    var f=byId('leadForm'), d=byId('dlg'); if(!f)return;
-    var etapa=f.querySelector('[name="etapa"]'), prio=f.querySelector('[name="prioridade"]'), mot=f.querySelector('[name="motivo_perda"]');
-    var perdido=etapa&&getEtapa(etapa.value)==='PERDIDO';
-    f.classList.toggle('show-mobile-motivo',!!perdido); if(d)d.classList.toggle('show-mobile-motivo',!!perdido);
-    if(perdido&&prio)setSelValue(prio,'Baixa');
-    if(mot){mot.required=!!perdido;mot.disabled=!perdido;if(!perdido)mot.value='';}
-  }
-  document.addEventListener('change',function(ev){if(ev.target&&ev.target.name==='etapa')setTimeout(applyPerdidoRules,0)},true);
-  document.addEventListener('click',function(){setTimeout(applyPerdidoRules,90)},true);
+/* ===== LeveCRM v40 — persistência e endurecimento ===== */
+var HISTORY_CACHE={};
+var SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
+var PROPOSALS_CACHE=[];
 
+function clearLeveCrmLocalData(){
+  const keep=new Set(['levecrm_v40_cleaned']);
+  Object.keys(localStorage).forEach(k=>{if((k.startsWith('crm_')||k.startsWith('levecrm_'))&&!keep.has(k))localStorage.removeItem(k);});
+}
+
+function loadAdminData(){
+  LISTS.responsavel=[];LISTS.empreendimento=[];LISTS.origem=[];
+}
+function getAdminResp(){return SETTINGS_CACHE.responsavel.map(x=>({...x}));}
+function getAdminEmps(){return SETTINGS_CACHE.empreendimento.map(x=>({...x}));}
+function getAdminOrigs(){return SETTINGS_CACHE.origem.map(x=>x.nome||x.name||'').filter(Boolean);}
+
+async function loadSettings(){
+  if(!ACCESS_USER?.id)return;
+  const rows=await sbFetch(`${SETTINGS_TBL}?select=id,category,name,payload&order=created_at.asc`);
+  SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
+  (rows||[]).forEach(r=>{
+    const item={id:r.id,nome:r.name,...(r.payload||{})};
+    if(SETTINGS_CACHE[r.category])SETTINGS_CACHE[r.category].push(item);
+  });
+  LISTS.responsavel=SETTINGS_CACHE.responsavel.map(x=>x.nome);
+  LISTS.empreendimento=SETTINGS_CACHE.empreendimento.map(x=>x.nome);
+  LISTS.origem=SETTINGS_CACHE.origem.map(x=>x.nome);
+  syncFilterSelects();
+}
+
+async function loadHistory(){
+  HISTORY_CACHE={};
+  if(!ALL.length)return;
+  const rows=await sbFetch(`${HIST_TBL}?select=id,lead_id,action,metadata,created_at&order=created_at.desc`);
+  (rows||[]).forEach(r=>(HISTORY_CACHE[r.lead_id]||=[]).push({id:r.id,date:r.created_at,action:r.action,metadata:r.metadata||{}}));
+}
+function getHistory(id){return (HISTORY_CACHE[id]||[]).slice();}
+async function addHistory(id,action,metadata={}){
+  if(!id||!ACCESS_USER?.id)return;
+  const temp={id:cid(),date:nowISO(),action,metadata};
+  (HISTORY_CACHE[id]||=[]).unshift(temp);
   try{
-    var oldUpsert=upsertLead;
-    upsertLead=function(payload,opts){
-      payload=payload||{};
-      if(getEtapa(payload.etapa)==='PERDIDO')payload.prioridade='Baixa';
-      return oldUpsert.call(this,payload,opts);
-    };
-  }catch(e){}
+    const rows=await sbFetch(HIST_TBL,{method:'POST',body:{access_user_id:ACCESS_USER.id,lead_id:id,action,metadata}});
+    if(rows?.[0])Object.assign(temp,{id:rows[0].id,date:rows[0].created_at||temp.date});
+  }catch(e){
+    HISTORY_CACHE[id]=(HISTORY_CACHE[id]||[]).filter(x=>x!==temp);
+    console.error('Falha ao gravar histórico',e);
+    throw e;
+  }
+}
+function renderHistory(id){
+  const el=document.getElementById('historyLog');if(!el)return;
+  const h=getHistory(id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(!h.length){el.textContent='Nenhuma movimentação registrada.';return;}
+  el.replaceChildren(...h.map(e=>{
+    const row=document.createElement('div');row.className='history-entry';
+    const d=parseDate(e.date),ds=d?`${pad2(d.getDate())}/${pad2(d.getMonth()+1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`:'';
+    const dt=document.createElement('span');dt.className='h-date';dt.textContent=ds;
+    const ac=document.createElement('span');ac.className='h-action';ac.textContent=e.action||'';
+    row.append(dt,ac);return row;
+  }));
+}
 
-  function esc(txt){try{return escH(txt)}catch(e){return String(txt||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}}
-  function setFilter(kind,val){
-    var fPri=byId('fPri'), mfPri=byId('mfPri');
-    if(kind==='prio'){
-      SHOW_LOST=false;SHOW_SB=false;setSelValue(fPri,val);setSelValue(mfPri,val);
-    }else{
-      setSelValue(fPri,'');setSelValue(mfPri,'');
-      if(kind==='lost'){SHOW_LOST=true;SHOW_SB=false;}
-      if(kind==='sb'){SHOW_SB=true;SHOW_LOST=false;}
-    }
-    try{syncMobileFiltersFromDesktop()}catch(e){}
-    render();
-  }
-  function mobileDashHTML(allList,visibleList){
-    var total=Math.max(1,allList.length), activePri='';
-    try{activePri=(byId('fPri')||{}).value||''}catch(e){}
-    var defs=[
-      ['Fechado','prio','✅'],['Altíssima','prio','🔥'],['Alta','prio','⚡'],['Média','prio','📌'],['Baixa','prio','🌿'],['PERDIDO','lost','✖'],['STAND BY','sb','⏸']
-    ];
-    var cards=defs.map(function(d){
-      var label=d[0], kind=d[1], icon=d[2];
-      var count=allList.filter(function(l){var e=getEtapa(l.etapa); if(kind==='lost')return e==='PERDIDO'; if(kind==='sb')return e==='STAND BY'; return e!=='PERDIDO'&&e!=='STAND BY'&&String(l.prioridade||'Baixa')===label;}).length;
-      var pct=Math.round((count/total)*100);
-      var active=(kind==='prio'&&activePri===label)||(kind==='lost'&&SHOW_LOST)||(kind==='sb'&&SHOW_SB);
-      var title=label==='PERDIDO'?'Perdido':(label==='STAND BY'?'Standby':label);
-      return '<button type="button" class="mp-card '+(active?'is-active':'')+'" data-kind="'+kind+'" data-filter="'+esc(label)+'"><div class="mp-top"><div class="mp-label">'+esc(title)+'</div><div class="mp-icon">'+icon+'</div></div><div class="mp-num">'+count+'</div><div class="mp-bottom"><div class="mp-bar"><div class="mp-fill" style="width:'+Math.max(5,pct)+'%"></div></div><div class="mp-pct">'+pct+'%</div></div></button>';
-    }).join('');
-    return '<div class="mobile-priority-dashboard">'+cards+'</div><div class="mobile-list-title"><strong>Leads</strong><span>'+visibleList.length+' na lista</span></div>';
-  }
+function leadActivityAt(l){return l?.ultima_interacao_em||l?.atualizado_em||l?.criado_em||l?.data_inicio||'';}
+function leadAttentionScore(l){
+  if(!l||['PERDIDO','FECHADO / GANHO'].includes(normEtapa(l.etapa)))return -999999;
+  let score=prioRank(l.prioridade)*100;
+  const nc=normProx(l.proximo_contato),today=dayStart(new Date());
+  if(nc){const diff=Math.floor((dayStart(parseDate(nc))-today)/86400000);score+=diff<=0?500:Math.max(0,120-diff*10);}
+  const idle=daysSince(leadActivityAt(l));score+=Math.min(idle,30)*8;
+  if(l.proxima_acao_de==='corretor')score+=100;
+  if(l.nivel_interesse==='Alto')score+=80;else if(l.nivel_interesse==='Médio')score+=35;
+  return score;
+}
+function sortLeads(leads,etapa){
+  const e=normEtapa(etapa);
+  return leads.filter(l=>normEtapa(l.etapa)===e).sort((a,b)=>leadAttentionScore(b)-leadAttentionScore(a)||Number(a.ordem||0)-Number(b.ordem||0)||new Date(leadActivityAt(b))-new Date(leadActivityAt(a)));
+}
+function sortMobilePriority(leads){return [...leads].sort((a,b)=>leadAttentionScore(b)-leadAttentionScore(a)||new Date(leadActivityAt(b))-new Date(leadActivityAt(a)));}
+
+async function loadAll(){
   try{
-    var oldRender=render;
-    render=function(){
-      if(!isMob())return oldRender();
-      var leads=filtered();
-      var ativos=leads.filter(function(l){return getEtapa(l.etapa)!=='PERDIDO'}).length;
-      var perdidos=leads.filter(function(l){return getEtapa(l.etapa)==='PERDIDO'}).length;
-      var nAtivos=byId('nAtivos'),nPerdidos=byId('nPerdidos'),nTotal=byId('nTotal');
-      if(nAtivos)nAtivos.textContent=ativos;if(nPerdidos)nPerdidos.textContent=perdidos;if(nTotal)nTotal.textContent=ativos+perdidos;
-      var btL=byId('btnToggleLost'),btS=byId('btnToggleSb');if(btL)btL.textContent=SHOW_LOST?'Ocultar perdidos':'Mostrar perdidos';if(btS)btS.textContent=SHOW_SB?'Ocultar Stand by':'Mostrar Stand by';
-      try{updateAlertBanner();updateAgendaBadge()}catch(e){}
-      var visible=sortMobilePriority(leads.filter(function(l){var e=getEtapa(l.etapa); if(e==='PERDIDO')return SHOW_LOST; if(e==='STAND BY')return SHOW_SB; return true;}));
-      var board=byId('board'); if(!board)return;
-      board.innerHTML='';
-      var sec=document.createElement('section');sec.className='col mobile-priority-col';sec.dataset.etapa='MOBILE_PRIORITY';
-      sec.innerHTML='<div class="col-head"><span class="cname">LEADS POR PRIORIDADE</span><span class="cnt">'+visible.length+'</span></div><div class="dropzone mobile-priority-list">'+mobileDashHTML(leads,visible)+visible.map(cardHTML).join('')+'</div>';
-      board.appendChild(sec);
-      sec.querySelectorAll('.mp-card').forEach(function(btn){btn.addEventListener('click',function(){var kind=btn.dataset.kind, val=btn.dataset.filter; if(kind==='prio')setFilter('prio',val); if(kind==='lost')setFilter('lost',val); if(kind==='sb')setFilter('sb',val);});});
-      wireMobileCards();
-      if(currentView==='dashboard')renderDashboard();
-    };
-  }catch(e){}
+    const {data:sessionResult,error:sessionError}=await AUTH_CLIENT.auth.getSession();if(sessionError)throw sessionError;
+    if(!sessionResult?.session?.user?.id||!ACCESS_USER?.id){ALL=[];ATTACHES=[];render();lockAccess('Sua sessão expirou.');return;}
+    const {error:accessError}=await AUTH_CLIENT.rpc('levecrm_assert_access');if(accessError)throw accessError;
+    const [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
+    ALL=(rows||[]).map(l=>{const legacyClosed=l.prioridade==='Fechado';return {...l,etapa:legacyClosed?'FECHADO / GANHO':normEtapa(l.etapa),prioridade:legacyClosed?'Alta':(LISTS.prioridade.includes(l.prioridade)?l.prioridade:'Baixa'),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)};});
+    await Promise.all([loadAttaches(),loadHistory()]);
+    render();setStatus('ok','');
+  }catch(e){
+    console.error(e);ALL=[];ATTACHES=[];HISTORY_CACHE={};refreshAttMap();render();
+    if(/acesso|expirado|bloqueado/i.test(e?.message||''))lockAccess(e.message);else showToast(`Erro ao carregar: ${e?.message||'falha desconhecida'}`,6000);
+  }
+}
 
-  function normalizeText(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
-  var rec=null, recording=false, manualStop=false, seen={}, restarting=false;
-  function insertObs(txt){
-    txt=String(txt||'').trim(); if(!txt)return;
-    var ta=document.querySelector('#leadForm [name="observacao"]'); if(!ta)return;
-    var val=String(ta.value||'');
-    if(!val.trim()&&typeof obsPfx==='function')txt=obsPfx()+' - '+txt;
-    var needsSpace=val&&!/[\s\n]$/.test(val);
-    ta.value=val+(needsSpace?' ':'')+txt;
-    ta.focus(); try{ta.setSelectionRange(ta.value.length,ta.value.length)}catch(e){}
-  }
-  function setBtn(on){var b=byId('btnGravarAtendimento'); if(!b)return; b.classList.toggle('is-recording',!!on); b.textContent=on?'⏹️ Parar':'🎙️ Gravar';}
-  function makeRec(){
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){alert('Este navegador não liberou transcrição por voz. Teste no Chrome/Android.');return null;}
-    var r=new SR(); r.lang='pt-BR'; r.continuous=true; r.interimResults=false; r.maxAlternatives=1;
-    r.onresult=function(ev){
-      for(var i=ev.resultIndex;i<ev.results.length;i++){
-        if(!ev.results[i].isFinal)continue;
-        var t=(ev.results[i][0]&&ev.results[i][0].transcript)||''; var key=normalizeText(t);
-        if(!key||seen[key])continue; seen[key]=true; insertObs(t.trim());
-      }
+async function upsertLead(payload,{silent=false}={}){
+  if(!payload.nome?.trim()){alert('Nome é obrigatório.');return false;}
+  const previous=ALL.find(x=>x.id===payload.id);
+  payload={...payload};
+  payload.etapa=normEtapa(payload.etapa);payload.motivo_perda=normMotivo(payload.motivo_perda);payload.proximo_contato=normProx(payload.proximo_contato);payload.visita=normVisita(payload.visita);
+  if(payload.etapa!=='PERDIDO')payload.motivo_perda='';else{payload.prioridade='Baixa';if(!payload.motivo_perda){alert('Motivo de perda obrigatório.');return false;}}
+  payload.access_user_id=ACCESS_USER?.id||payload.access_user_id;
+  payload.atualizado_em=nowISO();payload.ordem=Number(payload.ordem)||Date.now();
+  const observationChanged=!previous||String(previous.observacao||'')!==String(payload.observacao||'');
+  payload.ultima_interacao_em=observationChanged?nowISO():(previous?.ultima_interacao_em||payload.ultima_interacao_em||null);
+  payload.data_fechamento=payload.etapa==='FECHADO / GANHO'?(previous?.data_fechamento||nowISO()):null;
+  try{
+    let row;
+    if(previous){const{id,...body}=payload;const rows=await sbFetch(`${TBL}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body});row=rows?.[0]||payload;ALL[ALL.findIndex(x=>x.id===id)]={...previous,...row};}
+    else{payload.id=payload.id||cid();payload.criado_em=payload.criado_em||nowISO();const rows=await sbFetch(TBL,{method:'POST',body:payload});row=rows?.[0]||payload;ALL.unshift(row);await addHistory(row.id,'Lead criado');}
+    if(!silent){showToast('Lead salvo ✓');render();}
+    return true;
+  }catch(e){console.error(e);alert(`Erro ao salvar: ${e?.message||'verifique o Supabase.'}`);return false;}
+}
+
+async function addSetting(category,name,payload={}){
+  const rows=await sbFetch(SETTINGS_TBL,{method:'POST',body:{access_user_id:ACCESS_USER.id,category,name,payload}});
+  await loadSettings();return rows?.[0];
+}
+async function removeSetting(category,id){await sbFetch(`${SETTINGS_TBL}?id=eq.${encodeURIComponent(id)}&category=eq.${encodeURIComponent(category)}`,{method:'DELETE',prefer:'return=minimal'});await loadSettings();}
+async function addResp(){const n=document.getElementById('newRespNome').value.trim();if(!n)return alert('Informe o nome.');try{await addSetting('responsavel',n,{fone:document.getElementById('newRespFone').value.trim(),creci:document.getElementById('newRespCreci').value.trim()});document.getElementById('newRespNome').value='';renderAdmin('responsaveis');showToast('Corretor adicionado.');}catch(e){alert(e.message);}}
+async function removeResp(i){const it=getAdminResp()[i];if(!it||!confirm(`Remover "${it.nome}"?`))return;await removeSetting('responsavel',it.id);renderAdmin('responsaveis');}
+async function addEmp(){const n=document.getElementById('newEmpNome').value.trim();if(!n)return alert('Informe o nome.');try{await addSetting('empreendimento',n,{tipo:document.getElementById('newEmpTipo').value,valor:document.getElementById('newEmpValor').value.trim(),status:document.getElementById('newEmpStatus').value});document.getElementById('newEmpNome').value='';renderAdmin('imoveis');showToast('Imóvel adicionado.');}catch(e){alert(e.message);}}
+async function removeEmp(i){const it=getAdminEmps()[i];if(!it||!confirm(`Remover "${it.nome}"?`))return;await removeSetting('empreendimento',it.id);renderAdmin('imoveis');}
+async function addOrig(){const n=document.getElementById('newOrigNome').value.trim();if(!n)return alert('Informe a origem.');try{await addSetting('origem',n,{});document.getElementById('newOrigNome').value='';renderAdmin('origens');showToast('Origem adicionada.');}catch(e){alert(e.message);}}
+async function removeOrig(i){const it=SETTINGS_CACHE.origem[i];if(!it||!confirm(`Remover "${it.nome}"?`))return;await removeSetting('origem',it.id);renderAdmin('origens');}
+
+window.persistAiResult=async function(kind,result,input=''){
+  if(!ACCESS_USER?.id)return;
+  const lead=selectedLead();
+  await sbFetch(AI_TBL,{method:'POST',body:{access_user_id:ACCESS_USER.id,lead_id:lead?.id||null,kind,input_excerpt:String(input).slice(0,2000),result}});
+  if(lead?.id&&result){
+    const patch={...lead,
+      ultimo_falante:result.ultimo_falante==='cliente'||result.ultimo_falante==='corretor'?result.ultimo_falante:'',
+      proxima_acao_de:result.proxima_acao_de==='cliente'||result.proxima_acao_de==='corretor'?result.proxima_acao_de:'',
+      etapa_comercial:String(result.etapa_comercial||''),
+      nivel_interesse:['Baixo','Médio','Alto'].includes(result.nivel_interesse)?result.nivel_interesse:'',
     };
-    r.onerror=function(ev){ if(!recording)return; if(ev&&ev.error==='not-allowed'){recording=false;setBtn(false);return;} };
-    r.onend=function(){
-      rec=null;
-      if(recording&&!manualStop){
-        restarting=true; setTimeout(function(){restarting=false;if(recording&&!manualStop)startRec(true);},220);
-      }else{recording=false;manualStop=false;setBtn(false);}
-    };
-    return r;
+    await upsertLead(patch,{silent:true});
   }
-  function startRec(keepSeen){
-    if(!keepSeen)seen={};
-    rec=makeRec(); if(!rec)return;
-    try{rec.start();recording=true;manualStop=false;setBtn(true);}catch(e){if(!restarting){recording=false;setBtn(false);}}
+};
+
+async function loadProposals(leadId){
+  if(!leadId){PROPOSALS_CACHE=[];return[];}
+  const rows=await sbFetch(`${PROPOSAL_TBL}?select=*&lead_id=eq.${encodeURIComponent(leadId)}&order=updated_at.desc`);PROPOSALS_CACHE=rows||[];return PROPOSALS_CACHE;
+}
+async function saveProposal(payload){
+  const lead=selectedLead();if(!lead)throw new Error('Selecione um lead antes de salvar a proposta.');
+  const body={access_user_id:ACCESS_USER.id,lead_id:lead.id,status:payload.status||'rascunho',title:'Proposta comercial',payload,total_venda:Number(payload.total_venda||0),total_nominal:Number(payload.total_nominal||0),total_corrigido:payload.total_corrigido==null?null:Number(payload.total_corrigido)};
+  let rows;
+  if(payload.id){const{id,...patch}=body;rows=await sbFetch(`${PROPOSAL_TBL}?id=eq.${encodeURIComponent(payload.id)}`,{method:'PATCH',body:patch});}
+  else{const existing=await loadProposals(lead.id);body.version=Math.max(0,...existing.map(item=>Number(item.version)||0))+1;rows=await sbFetch(PROPOSAL_TBL,{method:'POST',body});}
+  return rows?.[0];
+}
+window.addEventListener('message',async event=>{
+  if(location.protocol!=='file:'&&event.origin!==location.origin)return;
+  const data=event.data||{};const frame=document.getElementById('proposalFrame');
+  try{
+    if(data.type==='LEVECRM_PROPOSAL_READY'){sendSelectedLeadToProposal();const lead=selectedLead();const items=lead?await loadProposals(lead.id):[];frame?.contentWindow?.postMessage({type:'LEVECRM_PROPOSALS_LIST',items},location.protocol==='file:'?'*':location.origin);}
+    if(data.type==='LEVECRM_PROPOSAL_SAVE'){const saved=await saveProposal(data.payload||{});const items=await loadProposals(saved.lead_id);frame?.contentWindow?.postMessage({type:'LEVECRM_PROPOSAL_SAVED',saved,items},location.protocol==='file:'?'*':location.origin);showToast('Proposta salva ✓');}
+    if(data.type==='LEVECRM_PROPOSALS_REQUEST'){const lead=selectedLead();const items=lead?await loadProposals(lead.id):[];frame?.contentWindow?.postMessage({type:'LEVECRM_PROPOSALS_LIST',items},location.protocol==='file:'?'*':location.origin);}
+  }catch(e){frame?.contentWindow?.postMessage({type:'LEVECRM_PROPOSAL_ERROR',message:e.message},location.protocol==='file:'?'*':location.origin);}
+});
+
+async function resetCurrentAccountData(){
+  if(!confirm('Isso apagará definitivamente todos os leads, anexos, agenda, propostas, análises e cadastros comerciais desta conta. Continuar?'))return;
+  const typed=prompt('Digite ZERAR para confirmar.');if(typed!=='ZERAR')return;
+  const {error}=await AUTH_CLIENT.rpc('levecrm_reset_my_data');if(error)return alert(error.message);
+  clearLeveCrmLocalData();ALL=[];ATTACHES=[];HISTORY_CACHE={};SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};loadAdminData();syncFilterSelects();render();showToast('Sistema zerado.');
+}
+window.resetCurrentAccountData=resetCurrentAccountData;
+
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+async function ensurePushSubscription(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||Notification.permission!=='granted'||!ACCESS_USER?.id)return null;
+  const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  if(!sub){
+    const session=await AUTH_CLIENT.auth.getSession();const token=session?.data?.session?.access_token;if(!token)return null;
+    const r=await fetch(`${SB_URL}/functions/v1/push-public-key`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)return null;
+    const {publicKey}=await r.json();if(!publicKey)return null;
+    sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(publicKey)});
   }
-  function stopRec(){manualStop=true;recording=false;setBtn(false);try{if(rec)rec.stop()}catch(e){}}
-  function installVoice(){
-    var old=byId('btnGravarAtendimento'); if(!old)return;
-    var btn=old.cloneNode(true); old.parentNode.replaceChild(btn,old); btn.textContent='🎙️ Gravar';
-    btn.addEventListener('click',function(){ if(recording)stopRec(); else startRec(false); });
-  }
-  function fixLabels(){var b=byId('btnNovoAtendimento'); if(b)b.textContent='Atendimento';}
-  window.addEventListener('load',function(){fixLabels();installVoice();applyPerdidoRules();setTimeout(function(){try{render()}catch(e){}},250);});
-})();
+  const json=sub.toJSON();
+  await sbFetch(`${PUSH_TBL}?on_conflict=access_user_id,endpoint`,{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:{access_user_id:ACCESS_USER.id,endpoint:sub.endpoint,subscription:json}});
+  return sub;
+}
+window.ensurePushSubscription=ensurePushSubscription;
+
+// Agenda: lembretes são sempre mostrados dentro do CRM. A notificação do navegador é apenas reforço enquanto o app está ativo.
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){agLoad().then(()=>{rescheduleAllNotifs();updateAgendaBadge();});}});
+
+// Limpeza única de vestígios locais das versões anteriores.
+if(localStorage.getItem('levecrm_v40_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v40_cleaned','1');}

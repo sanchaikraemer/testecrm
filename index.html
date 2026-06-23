@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0D1B2E"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="39"/>
+<meta name="application-version" content="40"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -65,7 +65,7 @@
 
 
 
-<link rel="stylesheet" href="./styles.css?v=39"/>
+<link rel="stylesheet" href="./styles.css?v=40"/>
 </head>
 <body class="t-navy has-sidebar">
 
@@ -75,7 +75,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v39</span></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v40</span></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -92,6 +92,7 @@
       <div class="side-list">
         <button class="nav-tab active" data-view="kanban"><span><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="side-label">Leads</span></button>
         <button class="nav-tab" id="agendaTabBtnSide"><span><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="8" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r="1" fill="currentColor" stroke="none"/></svg></span><span class="side-label">Agenda</span><span class="nav-badge" id="agBadgeSide">0</span></button>
+        <button class="nav-tab" id="lateSafeBtn" type="button"><span aria-hidden="true">⏰</span><span class="side-label">Atrasados</span><span class="nav-badge" id="lateBadge">0</span></button>
         <button class="nav-tab" data-view="direciona"><span><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.4L18 9l-4.2 1.6L12 15l-1.8-4.4L6 9l4.2-1.6z"/><path d="M19 14l.9 2.2L22 17l-2.1.8L19 20l-.9-2.2L16 17l2.1-.8z"/><path d="M5 17l.6 1.5L7 19l-1.4.5L5 21l-.6-1.5L3 19l1.4-.5z"/></svg></span><span class="side-label">Direciona IA</span></button>
         <button class="nav-tab" data-view="propostas"><span><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg></span><span class="side-label">Propostas</span></button>
         <button class="nav-tab" data-view="dashboard"><span><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V7M19 20V4"/></svg></span><span class="side-label">Painel</span></button>
@@ -480,6 +481,11 @@
           </div>
           <div class="adm-list" id="accessList"></div>
         </div>
+        <div class="adm-panel" style="margin-top:18px;border-color:#dc2626">
+          <h3>Limpeza da conta</h3>
+          <p class="adm-desc">Apaga definitivamente leads, anexos, agenda, propostas, análises e cadastros comerciais desta conta.</p>
+          <button class="btn" type="button" onclick="resetCurrentAccountData()" style="border-color:#dc2626;color:#dc2626">Zerar todos os dados da conta</button>
+        </div>
       </div>
     </div>
   </div>
@@ -553,7 +559,11 @@
             <input class="ag-time" id="agTime" type="time"/>
           </div>
           <div class="ag-field">
-            <label for="agNotify">Lembrete</label>
+            <label for="agLead">Lead vinculado <span class="ag-optional-hint">opcional</span></label>
+            <select class="ag-notify-sel" id="agLead"><option value="">Sem vínculo</option></select>
+          </div>
+          <div class="ag-field">
+            <label for="agNotify">Lembrete no navegador (reforço)</label>
             <select class="ag-notify-sel" id="agNotify">
               <option value="0">Não avisar</option>
               <option value="-1" selected>No horário</option>
@@ -596,8 +606,14 @@
             </div>
             <div class="ag-cal-grid" id="agGrid"></div>
           </div>
-
-
+          <div class="ag-panel" style="margin-top:12px">
+            <div class="ag-panel-head"><div class="ag-panel-title">Atrasados <span id="agOverdueCount">0</span></div></div>
+            <div id="agOverdueList"></div>
+          </div>
+          <div class="ag-panel" style="margin-top:12px">
+            <div class="ag-panel-head"><div class="ag-panel-title">Próximos 7 dias <span id="agUpcomingCount">0</span></div></div>
+            <div id="agUpcoming"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -639,7 +655,7 @@
     <div class="ql-sub">Preencha o essencial — complete depois no computador.</div>
     <div class="ql-field"><label class="ql-lbl">Nome *</label><input class="ql-input" id="qlNome" type="text" placeholder="Ex.: João Silva" autocomplete="name"/></div>
     <div class="ql-field"><label class="ql-lbl">Telefone</label><input class="ql-input" id="qlFone" type="tel" placeholder="Ex.: 54 9 9901-3331" inputmode="tel"/></div>
-    <div class="ql-field"><label class="ql-lbl">Prioridade</label><select class="ql-select" id="qlPrioridade"><option>Baixa</option><option>Média</option><option>Alta</option><option>Urgente</option></select></div>
+    <div class="ql-field"><label class="ql-lbl">Prioridade</label><select class="ql-select" id="qlPrioridade"><option>Baixa</option><option>Média</option><option>Alta</option><option>Altíssima</option></select></div>
     <button class="ql-save-btn" id="qlSaveBtn"><span id="qlSaveTxt">✅ Salvar Lead</span></button>
     <button class="ql-cancel-btn" id="qlCancelBtn">Cancelar</button>
   </div>
@@ -678,6 +694,10 @@
           </div>
           <div class="ai-result" id="aiChipResult"></div>
         </div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label class="lbl">Histórico de movimentações</label>
+        <div id="historyLog" class="history-log"></div>
       </div>
     </div>
     <div class="dlg-foot">
@@ -784,7 +804,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./app.js?v=39"></script>
+<script src="./app.js?v=40"></script>
 
 </body>
 </html>

@@ -623,6 +623,10 @@
       .preview-area { padding: 10px; }
     }
   </style>
+
+<style>
+.proposal-history-panel{border-top:1px solid var(--border);padding-bottom:110px}.proposal-history-item{width:100%;display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:9px;margin-bottom:6px;cursor:pointer}.proposal-history-item strong{font-size:11px;color:var(--primary)}.proposal-history-item span,.proposal-history-empty,.proposal-save-status{font-size:10px;color:var(--text-muted)}.proposal-save-status{padding:6px 2px}.proposal-history-empty{padding:8px 0}@media print{.sidebar{display:none!important}.preview-area{margin:0!important}.proposal-paper{box-shadow:none!important}.proposal-history-panel{display:none!important}}
+</style>
 </head>
 <body>
   <div class="app-container">
@@ -776,9 +780,17 @@
         </div>
       </div>
 
+      <div class="form-section proposal-history-panel">
+        <div class="form-section-title">Propostas salvas</div>
+        <div class="form-group"><label class="label">Status</label><select id="f-status"><option value="rascunho">Rascunho</option><option value="enviada">Enviada</option><option value="aceita">Aceita</option><option value="recusada">Recusada</option><option value="cancelada">Cancelada</option></select></div>
+        <div id="proposal-history-list"></div>
+        <div id="proposal-save-status" class="proposal-save-status">Nova proposta.</div>
+      </div>
+
       <div class="sidebar-footer">
-        <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
-        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+        <button class="btn btn-outline" type="button" onclick="clearForm()">Limpar</button>
+        <button class="btn btn-outline" type="button" onclick="saveProposal()">Salvar</button>
+        <button class="btn btn-primary" type="button" onclick="window.print()">Imprimir / PDF</button>
       </div>
     </aside>
 
@@ -849,13 +861,14 @@
 
         <div class="totals-area">
           <div class="total-row">
-            <span>Total Composto</span>
+            <span id="ft-label-composto">Total nominal composto</span>
             <span id="ft-composto">R$ 0,00</span>
           </div>
           <div class="total-row grand-total">
             <span>Total da Venda</span>
             <span id="ft-total">R$ 0,00</span>
           </div>
+          <div id="correction-note" style="display:none;font-size:10px;line-height:1.45;color:#6b7280;margin-top:8px"></div>
           <div id="status-container">
             <!-- Status badge will appear here -->
           </div>
@@ -878,217 +891,7 @@
     </main>
   </div>
 
-  <script>
-    const aportes = [];
-
-    // Initialize date
-    document.getElementById('f-data-emissao').valueAsDate = new Date();
-
-    function money(value) {
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(value || 0);
-    }
-
-    function num(id) {
-      return parseFloat(document.getElementById(id).value) || 0;
-    }
-
-    function txt(id) {
-      return document.getElementById(id).value.trim();
-    }
-
-    function addAporte() {
-      aportes.push({ valor: 0, data: '' });
-      drawAportes();
-      render();
-    }
-
-    function removeAporte(index) {
-      aportes.splice(index, 1);
-      drawAportes();
-      render();
-    }
-
-    function updateAporte(index, field, value) {
-      aportes[index][field] = field === 'valor' ? parseFloat(value) || 0 : value;
-      render();
-    }
-
-    function drawAportes() {
-      const container = document.getElementById('aportes-list');
-      container.innerHTML = '';
-      aportes.forEach((a, i) => {
-        const div = document.createElement('div');
-        div.className = 'aporte-item';
-        div.innerHTML = `
-          <div class="input-with-prefix">
-            <span class="input-prefix">R$</span>
-            <input type="number" step="0.01" value="${a.valor || ''}" placeholder="Valor" oninput="updateAporte(${i}, 'valor', this.value)">
-          </div>
-          <input type="text" value="${a.data}" placeholder="Data" oninput="updateAporte(${i}, 'data', this.value)">
-          <button class="btn-icon" onclick="removeAporte(${i})">&times;</button>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function render() {
-      // Get values
-      const cliente = txt('f-cliente') || 'Nome do Cliente';
-      const empreendimento = txt('f-empreendimento') || '--';
-      const apto = txt('f-apto') || '--';
-      const box = txt('f-box') || '--';
-      const valorApto = num('f-valor-apto');
-      const valorBox = num('f-valor-box');
-      const entrada = num('f-entrada');
-      const permuta = num('f-permuta');
-      const permutaDesc = txt('f-permuta-desc');
-      const chaves = num('f-chaves');
-      const parcelasMensais = num('f-parcelas-mensais');
-      const valorParcelaMensal = num('f-valor-parcela-mensal');
-      const parcelasSemestrais = num('f-parcelas-semestrais');
-      const valorParcelaSemestral = num('f-valor-parcela-semestral');
-      const parcelasAnuais = num('f-parcelas-anuais');
-      const valorParcelaAnual = num('f-valor-parcela-anual');
-      const correcao = document.getElementById('f-correcao').value;
-      const dataEmissao = txt('f-data-emissao');
-      const validade = txt('f-validade');
-      const obs = txt('f-obs');
-
-      const totalVenda = valorApto + valorBox;
-      const totalMensal = parcelasMensais * valorParcelaMensal;
-      const totalSemestral = parcelasSemestrais * valorParcelaSemestral;
-      const totalAnual = parcelasAnuais * valorParcelaAnual;
-      const totalFinanciado = totalMensal + totalSemestral + totalAnual;
-      const totalAportes = aportes.reduce((sum, a) => sum + a.valor, 0);
-      const totalComposto = entrada + permuta + chaves + totalFinanciado + totalAportes;
-      const saldo = totalVenda - totalComposto;
-
-      // Update Header & Meta
-      document.getElementById('m-cliente').textContent = cliente;
-      document.getElementById('m-empreendimento').textContent = empreendimento;
-      document.getElementById('m-apto').textContent = apto;
-      document.getElementById('m-box').textContent = box;
-      
-      if (dataEmissao) {
-        const date = new Date(dataEmissao);
-        document.getElementById('m-emissao').textContent = `Data: ${date.toLocaleDateString('pt-BR')}`;
-      }
-      document.getElementById('m-validade').textContent = validade ? `Validade: ${validade}` : '';
-
-      // Update Cards - SEPARATED VALUES
-      document.getElementById('m-valor-apto').textContent = money(valorApto);
-      document.getElementById('m-valor-box').textContent = money(valorBox);
-      document.getElementById('m-total-venda').textContent = money(totalVenda);
-      document.getElementById('m-saldo-restante').textContent = money(saldo);
-      document.getElementById('saldo-card').style.display = Math.abs(saldo) < 0.01 ? 'none' : 'block';
-
-      // Update Table
-      const tbody = document.getElementById('neg-body');
-      tbody.innerHTML = '';
-
-      const addRow = (title, desc, value) => {
-        if (value <= 0 && !desc) return;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>
-            <div class="item-title">${title}</div>
-            <div class="item-desc">${desc}</div>
-          </td>
-          <td class="item-value">${money(value)}</td>
-        `;
-        tbody.appendChild(tr);
-      };
-
-      if (entrada > 0) addRow('Entrada / Ato', 'Pagamento inicial para fechamento do negócio.', entrada);
-      if (permuta > 0 || permutaDesc) addRow('Permuta', permutaDesc || 'Bem recebido como parte do pagamento.', permuta);
-      
-      aportes.forEach((a, i) => {
-        if (a.valor > 0 || a.data) {
-          addRow(`Aporte / Reforço ${i+1}`, a.data ? `${money(a.valor)} — ${a.data}` : 'Pagamento programado.', a.valor);
-        }
-      });
-
-      if (chaves > 0) addRow('Chaves', 'Pagamento na entrega da unidade.', chaves);
-      
-      const sufixoCorrecao = correcao === 'INCC'
-        ? ' corrigidas pelo INCC.'
-        : correcao === '0.95'
-        ? ' com correção de 0,95% a.m.'
-        : correcao === 'IGPM'
-        ? ' corrigidas por IGP-M + 1% a.m.'
-        : '.';
-
-      if (parcelasMensais > 0) {
-        addRow('Parcelamento Mensal', `${parcelasMensais} parcelas mensais de ${money(valorParcelaMensal)}${sufixoCorrecao}`, totalMensal);
-      }
-
-      if (parcelasSemestrais > 0) {
-        addRow('Parcelamento Semestral', `${parcelasSemestrais} parcelas semestrais de ${money(valorParcelaSemestral)}${sufixoCorrecao}`, totalSemestral);
-      }
-
-      if (parcelasAnuais > 0) {
-        addRow('Parcelamento Anual', `${parcelasAnuais} parcelas anuais de ${money(valorParcelaAnual)}${sufixoCorrecao}`, totalAnual);
-      }
-
-      if (tbody.innerHTML === '') {
-        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999; padding:20px; font-size:12px">Nenhuma condição de pagamento definida.</td></tr>';
-      }
-
-      // Update Totals
-      document.getElementById('ft-composto').textContent = money(totalComposto);
-      document.getElementById('ft-total').textContent = money(totalVenda);
-
-      // Status removido por opção visual
-
-      // Observations
-      const obsCont = document.getElementById('obs-container');
-      if (obs) {
-        obsCont.style.display = 'block';
-        document.getElementById('m-obs').textContent = obs;
-      } else {
-        obsCont.style.display = 'none';
-      }
-    }
-
-    function clearForm() {
-      if (confirm('Deseja limpar todos os campos?')) {
-        document.querySelectorAll('input, textarea').forEach(i => i.value = '');
-        document.getElementById('f-correcao').value = '';
-        aportes.length = 0;
-        drawAportes();
-        document.getElementById('f-data-emissao').valueAsDate = new Date();
-        render();
-      }
-    }
-
-    // Initial render
-    render();
-  </script>
-
-<script>
-(function(){
-  function setField(id,value){
-    const el=document.getElementById(id);
-    if(!el || value===undefined || value===null) return;
-    el.value=String(value);
-    el.dispatchEvent(new Event('input',{bubbles:true}));
-    el.dispatchEvent(new Event('change',{bubbles:true}));
-  }
-  window.addEventListener('message',function(event){
-    const data=event.data||{};
-    if(data.type!=='LEVECRM_LEAD') return;
-    const lead=data.lead||{};
-    setField('f-cliente',lead.nome||'');
-    setField('f-empreendimento',lead.empreendimento||'');
-    setField('f-obs',lead.observacao||'');
-    if(typeof render==='function') render();
-  });
-  try{ parent.postMessage({type:'LEVECRM_PROPOSAL_READY'},'*'); }catch(e){}
-})();
-</script>
+  <script src="./propostas.js?v=40"></script>
 
 </body>
 </html>

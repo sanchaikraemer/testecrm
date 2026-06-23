@@ -1,19 +1,60 @@
-const CACHE='levecrm-v39';
-const CORE=['./','./index.html','./propostas.html','./styles.css','./app.js','./levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+const CACHE='levecrm-v40';
+const CORE=[
+  './','./index.html','./propostas.html','./styles.css?v=40','./app.js?v=40','./propostas.js?v=40',
+  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png'
+];
+
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
+});
+
 self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  if(event.request.mode==='navigate'){
-    event.respondWith(fetch(event.request).then(response=>{
-      if(response&&response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));}
-      return response;
-    }).catch(()=>caches.match('./index.html')));
+  const request=event.request;
+  if(request.method!=='GET')return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(request.mode==='navigate'){
+    event.respondWith((async()=>{
+      try{
+        const response=await fetch(request);
+        if(response.ok){const cache=await caches.open(CACHE);await cache.put(request,response.clone());}
+        return response;
+      }catch{
+        const exact=await caches.match(request);
+        if(exact)return exact;
+        const fallback=url.pathname.endsWith('propostas.html')?'./propostas.html':'./index.html';
+        return (await caches.match(fallback))||Response.error();
+      }
+    })());
     return;
   }
-  event.respondWith(fetch(event.request).then(response=>{
-    if(response&&response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));}
-    return response;
-  }).catch(()=>caches.match(event.request)));
+
+  event.respondWith((async()=>{
+    const cached=await caches.match(request);
+    const network=fetch(request).then(async response=>{
+      if(response.ok){const cache=await caches.open(CACHE);await cache.put(request,response.clone());}
+      return response;
+    }).catch(()=>null);
+    return cached||(await network)||Response.error();
+  })());
 });
-self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{for(const c of list){if('focus'in c)return c.focus();}return clients.openWindow(event.notification.data?.url||'./');}));});
+
+
+self.addEventListener('push',event=>{
+  let data={};try{data=event.data?.json()||{};}catch{data={title:'LeveCRM',body:event.data?.text()||'Você tem um compromisso.',url:'./'};}
+  event.waitUntil(self.registration.showNotification(data.title||'LeveCRM',{body:data.body||'Você tem um compromisso.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'levecrm-agenda',data:{url:data.url||'./'}}));
+});
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
+    const target=event.notification.data?.url||'./';
+    for(const client of list){if('focus' in client){client.navigate?.(target);return client.focus();}}
+    return clients.openWindow(target);
+  }));
+});
