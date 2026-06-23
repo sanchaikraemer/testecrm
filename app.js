@@ -22,6 +22,9 @@ let aiExtracted = {nome:'',fone:'',emp:'',obs:''};
 
 /* ══════════════════════════════════════
    CONFIG SUPABASE
+   A chave anon é pública por design: o Supabase a exige no cliente.
+   A segurança real fica nas políticas RLS (Row Level Security) do banco —
+   cada usuário só acessa os próprios registros via auth.uid().
 ══════════════════════════════════════ */
 const SB_URL='https://lnrbpiklzymblpyrobwx.supabase.co';
 window.SB_URL=SB_URL;
@@ -77,7 +80,6 @@ function daysSince(iso){const d=parseDate(iso);if(!d)return 0;const diff=Math.fl
 function escH(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function normPhone(p){const d=String(p||'').replace(/\D/g,'');if(!d)return'';return d.startsWith('55')?d:'55'+d;}
 function prioRank(p){return p==='Fechado'?5:p==='Altíssima'?4:p==='Alta'?3:p==='Média'?2:1;}
-function toPublicUrl(){return'';}
 function fileIcon(fn,ft){const n=String(fn||'').toLowerCase();const t=String(ft||'').toLowerCase();if(t.includes('pdf')||n.endsWith('.pdf'))return'📄';if(t.includes('image')||/\.(png|jpe?g|webp|gif)$/i.test(n))return'🖼️';if(/\.(doc|docx|txt)$/i.test(n))return'📝';if(/\.(xls|xlsx|csv)$/i.test(n))return'📊';return'📎';}
 
 
@@ -141,7 +143,6 @@ function accessPlanMessage(profile){
   if(trialEnd && trialEnd.getTime()>=now)return{ok:true,msg:`Teste grátis ativo até ${accessFmt(profile.trial_end)}.`,kind:'trial'};
   return{ok:false,msg:'Seu teste/licença expirou. Entre e ative uma chave para continuar.'};
 }
-function saveAccessSession(){/* sessão agora é mantida pelo Supabase Auth */}
 function clearAccessSession(){ACCESS_USER=null;}
 function applyAccessUser(profile,session){
   const email=accessNormUser(session?.user?.email||profile?.email||'');
@@ -1941,25 +1942,6 @@ accessResumeSession();
 })();
 
 
-/* ===== levecrm-counter-labels-js ===== */
-(function(){
-  function labelCounters(){
-    const boxes = Array.from(document.querySelectorAll('.cbox'));
-    const labels = ['Perdidos','Ativos','Total'];
-    boxes.slice(0,3).forEach((box,i)=>{
-      if(!box.querySelector('.t')){
-        const n = box.textContent.trim();
-        box.innerHTML = '<span class="n">'+n+'</span><span class="t">'+labels[i]+'</span>';
-      }else{
-        const t = box.querySelector('.t');
-        if(t && (!t.textContent || /^\s*$/.test(t.textContent))) t.textContent = labels[i] || '';
-      }
-    });
-  }
-  window.addEventListener('load', labelCounters);
-  setTimeout(labelCounters,500);
-  document.addEventListener('click',()=>setTimeout(labelCounters,300));
-})();
 
 
 /* ===== direciona-retomada-js ===== */
@@ -2057,51 +2039,8 @@ setTimeout(updateFlowHint,600);
 })();
 
 
-/* ===== levecrm-safe-recovery-js ===== */
+/* ===== direciona-view-state ===== */
 (function(){
-  function norm(txt){
-    return String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-  }
-  function root(){
-    return document.querySelector('#dlg,.modal,.dialog,.lead-modal');
-  }
-  function fieldByLabel(labelText){
-    const r = root();
-    if(!r) return null;
-    const target = norm(labelText);
-    const labels = Array.from(r.querySelectorAll('label'));
-    for(const label of labels){
-      if(norm(label.textContent).includes(target)){
-        return label.closest('.field,.form-field,.input-group,.form-group,.col,.row') || label.parentElement;
-      }
-    }
-    return null;
-  }
-  function etapaValue(){
-    const r = root();
-    if(!r) return '';
-    const labels = Array.from(r.querySelectorAll('label'));
-    for(const label of labels){
-      if(norm(label.textContent).includes('etapa')){
-        const box = label.closest('.field,.form-field,.input-group,.form-group,.col,.row') || label.parentElement;
-        const select = box && box.querySelector('select');
-        if(select) return norm(select.value || (select.options[select.selectedIndex] && select.options[select.selectedIndex].text) || '');
-      }
-    }
-    return '';
-  }
-  function cleanModal(){
-    const r = root();
-    if(!r) return;
-    const resp = fieldByLabel('Responsavel');
-    if(resp) resp.style.display = 'none';
-
-    const motivo = fieldByLabel('Motivo de perda');
-    if(motivo){
-      const etapa = etapaValue();
-      motivo.style.display = (etapa.includes('perdido') || etapa.includes('perda')) ? '' : 'none';
-    }
-  }
   function updateDireciona(){
     const d = document.getElementById('view-direciona');
     const active = !!d && (d.classList.contains('active') || d.style.display === 'block' || getComputedStyle(d).display !== 'none');
@@ -2118,195 +2057,21 @@ setTimeout(updateFlowHint,600);
     wrapped.__safeRecoveryWrapped = true;
     window.switchView = wrapped;
   }
-  document.addEventListener('change', function(e){
-    if(e.target && e.target.matches('select')) setTimeout(cleanModal, 60);
-  }, true);
-  document.addEventListener('click', function(){
-    setTimeout(cleanModal, 80);
-    setTimeout(updateDireciona, 80);
-  }, true);
-  window.addEventListener('load', function(){
-    setTimeout(cleanModal, 800);
-    setTimeout(updateDireciona, 800);
-  });
-  setInterval(cleanModal, 1200);
+  document.addEventListener('click', function(){ setTimeout(updateDireciona, 80); }, true);
+  window.addEventListener('load', function(){ setTimeout(updateDireciona, 800); });
 })();
 
 
-/* ===== levecrm-ai-loading-safe-final ===== */
-(function(){
-  window.showAiLoading = function(title,text){
-    const o=document.getElementById('aiLoadingOverlay');
-    if(!o) return;
-    const t=document.getElementById('aiLoadingTitle');
-    const p=document.getElementById('aiLoadingText');
-    if(t) t.textContent=title||'Analisando com IA';
-    if(p) p.textContent=text||'Processando informações...';
-    o.style.display='flex';
-  };
-  window.hideAiLoading = function(){
-    const o=document.getElementById('aiLoadingOverlay');
-    if(o) o.style.display='none';
-  };
-  function limparChipsFalsosDeAnexo(){
-    document.querySelectorAll('.lead-attachment-clean-chip').forEach(el=>el.remove());
-  }
-  document.addEventListener('click', function(e){
-    if(e.target.closest('#attachBtn,#btnClose,#btnCancel,#btnSave,.card')){
-      setTimeout(limparChipsFalsosDeAnexo, 80);
-    }
-  }, true);
-  window.addEventListener('load', limparChipsFalsosDeAnexo);
-})();
 
 
-/* ===== levecrm-loading-forcado-js ===== */
-(function(){
-  let timer=null;
-  function ensureOverlay(){
-    let el=document.getElementById('aiLoadingOverlayForced');
-    if(!el){
-      const wrap=document.createElement('div');
-      wrap.innerHTML='<div id="aiLoadingOverlayForced"><div class="ai-load-card"><div class="ai-load-spinner"></div><div class="ai-load-title" id="aiLoadingForcedTitle">Analisando com IA</div><div class="ai-load-text" id="aiLoadingForcedText">Lendo os prints e montando a melhor orientação comercial.</div></div></div>';
-      document.body.appendChild(wrap.firstElementChild);
-      el=document.getElementById('aiLoadingOverlayForced');
-    }
-    return el;
-  }
-  window.leveShowLoading=function(title,text){
-    const el=ensureOverlay();
-    const t=document.getElementById('aiLoadingForcedTitle');
-    const p=document.getElementById('aiLoadingForcedText');
-    if(t)t.textContent=title||'Analisando com IA';
-    if(p)p.textContent=text||'Processando informações...';
-    el.style.display='flex';
-    clearTimeout(timer);
-    timer=setTimeout(()=>window.leveHideLoading(),90000);
-  };
-  window.leveHideLoading=function(){
-    const el=document.getElementById('aiLoadingOverlayForced');
-    if(el)el.style.display='none';
-    clearTimeout(timer);
-  };
-  document.addEventListener('click',function(e){
-    const btn=e.target.closest('#btnAiAnalyzeMain,#btnRetomadaMain');
-    if(!btn)return;
-    if(btn.id==='btnAiAnalyzeMain'){
-      window.leveShowLoading('Analisando conversa','Lendo contexto, interpretando o cliente e criando o diagnóstico comercial.');
-    }else{
-      window.leveShowLoading('Gerando retomada','Criando uma mensagem natural baseada na última conversa do cliente.');
-    }
-  },true);
-  const oldFetch=window.fetch;
-  if(typeof oldFetch==='function'&&!oldFetch.__leveLoadingWrapped){
-    const wrapped=function(){
-      const args=arguments;
-      const url=String(args[0]||'');
-      const isAi=url.includes('api.openai.com');
-      return oldFetch.apply(this,args).then(function(res){
-        if(isAi)setTimeout(()=>window.leveHideLoading(),900);
-        return res;
-      }).catch(function(err){
-        if(isAi)setTimeout(()=>window.leveHideLoading(),300);
-        throw err;
-      });
-    };
-    wrapped.__leveLoadingWrapped=true;
-    window.fetch=wrapped;
-  }
-  window.addEventListener('error',function(){setTimeout(()=>window.leveHideLoading(),500)});
-  window.addEventListener('unhandledrejection',function(){setTimeout(()=>window.leveHideLoading(),500)});
-})();
 
 
-/* ===== levecrm-loading-cancel-js ===== */
-(function(){
-  window.leveAiAbortController = null;
-
-  function ensureCancelButton(){
-    const box = document.querySelector('#aiLoadingOverlayForced .ai-load-card') || document.querySelector('#aiLoadingBox');
-    if(!box) return;
-    if(box.querySelector('.ai-load-cancel')) return;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'ai-load-cancel';
-    btn.textContent = 'Cancelar análise';
-    btn.addEventListener('click', function(){
-      try{
-        if(window.leveAiAbortController){
-          window.leveAiAbortController.abort();
-          window.leveAiAbortController = null;
-        }
-      }catch(e){}
-
-      if(typeof window.leveHideLoading === 'function') window.leveHideLoading();
-      if(typeof window.hideAiLoading === 'function') window.hideAiLoading();
-
-      const status = document.getElementById('diaStatus');
-      if(status) status.textContent = 'Análise cancelada pelo usuário.';
-
-      const b1 = document.getElementById('btnAiAnalyzeMain');
-      const b2 = document.getElementById('btnRetomadaMain');
-      if(b1){ b1.disabled = false; b1.textContent = '✨ Analisar conversa'; }
-      if(b2){ b2.disabled = false; b2.textContent = '🔁 Gerar retomada'; }
-    });
-
-    box.appendChild(btn);
-  }
-
-  const oldShow = window.leveShowLoading;
-  window.leveShowLoading = function(title,text){
-    if(typeof oldShow === 'function') oldShow(title,text);
-    setTimeout(ensureCancelButton, 30);
-  };
-
-  const oldShow2 = window.showAiLoading;
-  window.showAiLoading = function(title,text){
-    if(typeof oldShow2 === 'function') oldShow2(title,text);
-    setTimeout(ensureCancelButton, 30);
-  };
-
-  const originalFetch = window.fetch;
-  if(typeof originalFetch === 'function' && !originalFetch.__leveCancelWrapped){
-    const wrapped = function(input, init){
-      const url = String(input || '');
-      const isAi = url.includes('api.openai.com');
-
-      if(isAi){
-        window.leveAiAbortController = new AbortController();
-        init = init || {};
-        init.signal = window.leveAiAbortController.signal;
-      }
-
-      return originalFetch(input, init).finally(function(){
-        if(isAi) window.leveAiAbortController = null;
-      });
-    };
-    wrapped.__leveCancelWrapped = true;
-    window.fetch = wrapped;
-  }
-
-  document.addEventListener('click', function(e){
-    const btn = e.target.closest('#btnAiAnalyzeMain,#btnRetomadaMain');
-    if(btn) setTimeout(ensureCancelButton, 120);
-  }, true);
-
-  window.addEventListener('load', function(){
-    setTimeout(ensureCancelButton, 800);
-  });
-})();
 
 
 /* ===== levecrm-safe-ui-v31-js ===== */
 (function(){
   function safe(fn){try{fn()}catch(e){console.warn('LeveCRM ajuste seguro ignorado:',e)}}
   function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
-
-  function removeBanner(){
-    var el=document.getElementById('alertBanner');
-    if(el) el.style.display='none';
-  }
 
   function oneLupa(){
     var inp=document.getElementById('searchQ') || Array.from(document.querySelectorAll('input')).find(i=>/busca|buscar|search/i.test(i.placeholder||''));
@@ -2402,7 +2167,7 @@ setTimeout(updateFlowHint,600);
   }
 
   function run(){
-    safe(removeBanner);safe(oneLupa);safe(touchedToday);safe(ensureMenu);safe(moreLayer);
+    safe(oneLupa);safe(touchedToday);safe(ensureMenu);safe(moreLayer);
   }
   window.addEventListener('load',function(){setTimeout(run,600)});
   document.addEventListener('click',function(){setTimeout(run,100)},true);
@@ -2590,55 +2355,6 @@ setTimeout(updateFlowHint,600);
 })();
 
 
-/* ===== mobile-cleanup-2804-script ===== */
-(function(){
-  function isMobileWidth(){
-    return window.innerWidth <= 900;
-  }
-
-  function updateMobileNewLeadFields(){
-    var form = document.getElementById('leadForm');
-    if(!form) return;
-
-    if(!isMobileWidth() || !form.classList.contains('is-new-lead')){
-      form.classList.remove('show-mobile-motivo');
-      return;
-    }
-
-    var etapa = form.querySelector('[name="etapa"]');
-    var etapaVal = etapa ? String(etapa.value || '').trim().toUpperCase() : '';
-
-    if(etapaVal === 'PERDIDO'){
-      form.classList.add('show-mobile-motivo');
-    }else{
-      form.classList.remove('show-mobile-motivo');
-      var motivo = form.querySelector('[name="motivo_perda"]');
-      if(motivo) motivo.value = '';
-    }
-  }
-
-  function scheduleUpdate(){
-    setTimeout(updateMobileNewLeadFields, 0);
-    setTimeout(updateMobileNewLeadFields, 60);
-  }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    var btnNew = document.getElementById('btnNew');
-    var btnNewMobile = document.getElementById('btnNewMobile');
-    var etapa = document.querySelector('#leadForm [name="etapa"]');
-    var dlg = document.getElementById('dlg');
-
-    if(btnNew) btnNew.addEventListener('click', scheduleUpdate);
-    if(btnNewMobile) btnNewMobile.addEventListener('click', scheduleUpdate);
-    if(etapa) etapa.addEventListener('change', updateMobileNewLeadFields);
-    if(dlg) dlg.addEventListener('close', function(){
-      var form = document.getElementById('leadForm');
-      if(form) form.classList.remove('show-mobile-motivo');
-    });
-
-    scheduleUpdate();
-  });
-})();
 
 
 /* ===== patch-dnd-robusto-2804 ===== */
@@ -2711,155 +2427,8 @@ window.addEventListener('resize',()=>{
 });
 
 
-/* ===== levecrm-ajustes-combinados-2904-script ===== */
-(function(){
-  function form(){ return document.getElementById('leadForm'); }
-  function etapaAtual(){
-    var f=form();
-    var el=f ? f.querySelector('[name="etapa"]') : null;
-    return el ? String(el.value || '').trim().toUpperCase() : '';
-  }
-  function atualizarMotivoMobile(){
-    var f=form();
-    if(!f) return;
-    var mostrar = etapaAtual() === 'PERDIDO';
-    f.classList.toggle('show-mobile-motivo', mostrar);
-    var motivo = f.querySelector('[name="motivo_perda"]');
-    if(motivo){
-      motivo.disabled = !mostrar;
-      motivo.required = mostrar;
-      if(!mostrar) motivo.value = '';
-    }
-  }
-  window.addEventListener('load', function(){
-    var etapa = document.querySelector('#leadForm [name="etapa"]');
-    var dlg = document.getElementById('dlg');
-    if(etapa) etapa.addEventListener('change', function(){ setTimeout(atualizarMotivoMobile,0); setTimeout(atualizarMotivoMobile,80); });
-    if(dlg) dlg.addEventListener('close', function(){ var f=form(); if(f) f.classList.remove('show-mobile-motivo'); });
-    document.addEventListener('click', function(){ setTimeout(atualizarMotivoMobile,120); }, true);
-    setTimeout(atualizarMotivoMobile,200);
-  });
-
-  var recognition = null;
-  var gravando = false;
-  var finalBuffer = '';
-
-  function inserirTextoObservacao(txt){
-    txt = String(txt || '').trim();
-    if(!txt) return;
-    var ta = document.querySelector('#leadForm [name="observacao"]');
-    if(!ta) return;
-    var val = String(ta.value || '');
-    var start = typeof ta.selectionStart === 'number' ? ta.selectionStart : val.length;
-    var end = typeof ta.selectionEnd === 'number' ? ta.selectionEnd : val.length;
-    if(!val.trim() && typeof window.obsPfx === 'function'){
-      txt = window.obsPfx() + ' - ' + txt;
-    }
-    var before = val.slice(0,start);
-    var after = val.slice(end);
-    var glueBefore = before && !/[\s\n]$/.test(before) ? ' ' : '';
-    var glueAfter = after && !/^[\s\n]/.test(after) ? ' ' : '';
-    ta.value = before + glueBefore + txt + glueAfter + after;
-    ta.focus();
-    var pos = (before + glueBefore + txt).length;
-    try{ ta.setSelectionRange(pos,pos); }catch(e){}
-  }
-
-  function setBotaoGravacao(on){
-    var btn = document.getElementById('btnGravarAtendimento');
-    if(!btn) return;
-    btn.classList.toggle('is-recording', !!on);
-    btn.textContent = on ? '⏹️ Parar' : '🎙️ Gravar';
-  }
-
-  function iniciarReconhecimento(){
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){
-      alert('Este navegador não liberou transcrição por voz. Teste no Chrome/Android ou no Chrome do computador.');
-      return;
-    }
-    recognition = new SR();
-    recognition.lang = 'pt-BR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    finalBuffer = '';
-    recognition.onresult = function(event){
-      for(var i = event.resultIndex; i < event.results.length; i++){
-        var trecho = event.results[i][0] ? event.results[i][0].transcript : '';
-        if(event.results[i].isFinal) finalBuffer += ' ' + trecho;
-      }
-    };
-    recognition.onerror = function(){
-      gravando = false;
-      setBotaoGravacao(false);
-    };
-    recognition.onend = function(){
-      var texto = finalBuffer.trim();
-      gravando = false;
-      setBotaoGravacao(false);
-      if(texto) inserirTextoObservacao(texto);
-    };
-    try{
-      recognition.start();
-      gravando = true;
-      setBotaoGravacao(true);
-    }catch(e){
-      gravando = false;
-      setBotaoGravacao(false);
-    }
-  }
-
-  window.addEventListener('load', function(){
-    var btn = document.getElementById('btnGravarAtendimento');
-    if(!btn) return;
-    btn.addEventListener('click', function(){
-      if(gravando && recognition){
-        try{ recognition.stop(); }catch(e){}
-        return;
-      }
-      iniciarReconhecimento();
-    });
-  });
-})();
 
 
-/* ===== levecrm-correcao-final-mobile-2904-v4-script ===== */
-(function(){
-  function form(){ return document.getElementById('leadForm'); }
-  function dlg(){ return document.getElementById('dlg'); }
-  function etapaEl(){ var f=form(); return f ? f.querySelector('[name="etapa"]') : null; }
-  function motivoEl(){ var f=form(); return f ? f.querySelector('[name="motivo_perda"]') : null; }
-  function isPerdido(){ var e=etapaEl(); return e && String(e.value||'').trim().toUpperCase()==='PERDIDO'; }
-  function applyMotivo(){
-    var f=form(), d=dlg(), m=motivoEl(), show=isPerdido();
-    if(f) f.classList.toggle('show-mobile-motivo', show);
-    if(d) d.classList.toggle('show-mobile-motivo', show);
-    if(m){
-      m.disabled = !show;
-      m.required = !!show;
-      if(!show) m.value = '';
-    }
-  }
-  function applyButtons(){
-    var b=document.getElementById('btnNovoAtendimento');
-    if(b) b.textContent='Atendimento';
-  }
-  function applyAll(){ applyMotivo(); applyButtons(); }
-
-  document.addEventListener('change', function(ev){
-    if(ev.target && ev.target.name === 'etapa') setTimeout(applyMotivo,0);
-  }, true);
-  document.addEventListener('input', function(ev){
-    if(ev.target && ev.target.name === 'etapa') setTimeout(applyMotivo,0);
-  }, true);
-  document.addEventListener('click', function(){ setTimeout(applyAll,80); }, true);
-  window.addEventListener('load', function(){
-    applyAll();
-    setTimeout(applyAll,200);
-    setTimeout(applyAll,700);
-    setInterval(applyAll,1200);
-  });
-})();
 
 
 /* ===== levecrm-patch-3004-mobile-premium-audio-script ===== */
