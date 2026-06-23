@@ -31,6 +31,27 @@ body.t-dark{
   --nm:#1A2840;--emp:#4A6278;
   --accent:#4A90D9;--accent2:#8A9BB0;
 }
+/* TEMA DIRECIONA CORRETOR */
+body.t-direciona{
+  --bg:#0C1D24;--bg2:#132A33;--bg3:#21424E;
+  --col:#0A1A20;--col2:#0E2530;
+  --text:#E6EEF0;--muted:#8FA9B0;--line:rgba(255,255,255,.08);
+  --card:#E6EEF0;--card2:#D8E4E8;
+  --nm:#132A33;--emp:#4A6878;
+  --accent:#FF6B5C;--accent2:#132A33;
+  --gold:#FF6B5C;
+}
+body.t-direciona .stat-val{font-family:'Sora',sans-serif}
+body.t-direciona .logo-name{font-family:'Sora',sans-serif}
+body.t-direciona .logo-name .crm{color:#FF6B5C}
+body.t-direciona .card{border-color:#8FA9B0;box-shadow:0 2px 8px rgba(5,15,28,.12)}
+body.t-direciona .card.p-low{background:#DCE8EC;border-color:#8FA9B0}
+body.t-direciona .card.p-med{background:#D5E3E8;border-color:#6A98A8}
+body.t-direciona .card.p-high{background:#F9EDEB;border-color:#E8A090}
+body.t-direciona .card.p-top{background:#FFEDE9;border-color:#FF6B5C;border-width:1.5px}
+body.t-direciona .card.p-top::before{background:#FF6B5C}
+body.t-direciona .card.p-done{background:#E3F2EC;border-color:#8DCAAA}
+body.t-direciona .btn-accent{background:linear-gradient(180deg,#FF6B5C,#E0503F);border-color:#CC3D2E}
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
