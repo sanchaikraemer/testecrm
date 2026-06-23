@@ -1,4 +1,4 @@
-/* LeveCRM v38 — correção de inicialização e carregamento de leads
+/* LeveCRM v39 — limpeza geral: versões sincronizadas, código morto removido, patches superseded eliminados
    Gerado a partir do arquivo recebido em 22/06/2026. */
 
 /* ===== main ===== */
@@ -1661,7 +1661,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=38');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=39');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{

@@ -1,4 +1,4 @@
-const CACHE='levecrm-v38';
+const CACHE='levecrm-v39';
 const CORE=['./','./index.html','./propostas.html','./styles.css','./app.js','./levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
