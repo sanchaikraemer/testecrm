@@ -2314,7 +2314,13 @@ async function loadAll(){
   try{
     const {data:sessionResult,error:sessionError}=await AUTH_CLIENT.auth.getSession();if(sessionError)throw sessionError;
     if(!sessionResult?.session?.user?.id||!ACCESS_USER?.id){ALL=[];ATTACHES=[];render();lockAccess('Sua sessão expirou.');return;}
-    const {error:accessError}=await AUTH_CLIENT.rpc('levecrm_assert_access');if(accessError)throw accessError;
+    const {error:accessError}=await AUTH_CLIENT.rpc('levecrm_assert_access');
+    if(accessError){
+      const accMsg=String(accessError.message||accessError.hint||'');
+      const fnMissing=accessError.code==='PGRST202'||/could not find the function|schema cache|does not exist/i.test(accMsg);
+      if(!fnMissing)throw accessError;
+      console.warn('levecrm_assert_access indisponível no banco; seguindo sem o gate server-side.',accessError);
+    }
     let [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
     const imported=await importInitialLeadsIfNeeded(rows||[]);
     if(imported){
