@@ -2223,7 +2223,7 @@ async function importInitialLeadsIfNeeded(existingRows=[]){
     const complete=Object.entries(expectedCounts).every(([etapa,total])=>Number(currentCounts[etapa]||0)===total);
     if(complete)return false;
   }
-  if(marker?.payload?.disabled===true)return false;
+  if(marker?.payload?.disabled===true&&currentSourceRows.length>0)return false;
   if(unrelated.length)throw new Error('A conta contém cadastros diferentes da planilha. A importação foi bloqueada para não misturar dados.');
 
   showToast(`Importando ${200-currentSourceRows.length} leads restantes...`,6000);
