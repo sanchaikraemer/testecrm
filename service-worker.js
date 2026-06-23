@@ -1,7 +1,7 @@
-const CACHE='levecrm-v41';
+const CACHE='levecrm-v42';
 const CORE=[
-  './','./index.html','./propostas.html','./styles.css?v=41','./app.js?v=41','./propostas.js?v=41',
-  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=41'
+  './','./index.html','./propostas.html','./styles.css?v=42','./app.js?v=42','./propostas.js?v=42',
+  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=42'
 ];
 
 self.addEventListener('install',event=>{
@@ -35,6 +35,16 @@ self.addEventListener('fetch',event=>{
   }
 
   event.respondWith((async()=>{
+    const isCritical=/\.(?:js|css|json)$/.test(url.pathname);
+    if(isCritical){
+      try{
+        const response=await fetch(request,{cache:'no-store'});
+        if(response.ok){const cache=await caches.open(CACHE);await cache.put(request,response.clone());}
+        return response;
+      }catch{
+        return (await caches.match(request))||Response.error();
+      }
+    }
     const cached=await caches.match(request);
     const network=fetch(request).then(async response=>{
       if(response.ok){const cache=await caches.open(CACHE);await cache.put(request,response.clone());}

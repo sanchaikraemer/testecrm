@@ -1,6 +1,30 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+(function(){
+  const KEY='levecrm_v42_cache_reset_done';
+  if(localStorage.getItem(KEY)==='1') return;
+  localStorage.setItem(KEY,'1');
+  Promise.resolve().then(async()=>{
+    try{
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+      if('caches' in window){
+        const names=await caches.keys();
+        await Promise.all(names.map(n=>caches.delete(n)));
+      }
+    }catch(e){console.warn('Atualização de cache:',e);}
+    const u=new URL(location.href);
+    u.searchParams.set('versao','42');
+    u.searchParams.set('_',Date.now());
+    location.replace(u.toString());
+  });
+})();
+</script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gerador de Proposta Premium v3 - LeveCRM</title>
@@ -891,7 +915,7 @@
     </main>
   </div>
 
-  <script src="./propostas.js?v=41"></script>
+  <script src="./propostas.js?v=42"></script>
 
 </body>
 </html>

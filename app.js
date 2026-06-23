@@ -1,4 +1,4 @@
-/* LeveCRM v41 — base persistente, segurança RLS, histórico, propostas e correções gerais.
+/* LeveCRM v42 — base persistente, segurança RLS, histórico, propostas e correções gerais.
    Pacote revisado e validado em 23/06/2026. */
 
 /* ===== main ===== */
@@ -41,7 +41,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=41';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=42';
 const INITIAL_IMPORT_MARKER='__LEADS_V41_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -1588,7 +1588,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=41');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=42');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -2156,13 +2156,13 @@ window.addEventListener('resize',()=>{
 
 
 
-/* ===== LeveCRM v41 — persistência e endurecimento ===== */
+/* ===== LeveCRM v42 — persistência e endurecimento ===== */
 var HISTORY_CACHE={};
 var SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
 var PROPOSALS_CACHE=[];
 
 function clearLeveCrmLocalData(){
-  const keep=new Set(['levecrm_v41_cleaned']);
+  const keep=new Set(['levecrm_v42_cleaned','levecrm_v42_cache_reset_done']);
   Object.keys(localStorage).forEach(k=>{if((k.startsWith('crm_')||k.startsWith('levecrm_'))&&!keep.has(k))localStorage.removeItem(k);});
 }
 
@@ -2228,7 +2228,7 @@ async function importInitialLeadsIfNeeded(existingRows=[]){
   if(imported.length!==200)throw new Error(`Foram confirmados ${imported.length} de 200 leads. A importação não foi marcada como concluída.`);
   await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
     method:'POST',
-    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v41',count:200,imported_at:nowISO()}},
+    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v42',count:200,imported_at:nowISO()}},
     prefer:'resolution=merge-duplicates,return=minimal'
   });
   return true;
@@ -2384,7 +2384,7 @@ async function resetCurrentAccountData(){
   try{
     await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
       method:'POST',
-      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v41',count:0,disabled:true,reset_at:nowISO()}},
+      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v42',count:0,disabled:true,reset_at:nowISO()}},
       prefer:'resolution=merge-duplicates,return=minimal'
     });
   }catch(markerError){console.warn('Não foi possível gravar o marcador pós-reset.',markerError);}
@@ -2416,4 +2416,4 @@ window.ensurePushSubscription=ensurePushSubscription;
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){agLoad().then(()=>{rescheduleAllNotifs();updateAgendaBadge();});}});
 
 // Limpeza única de vestígios locais das versões anteriores.
-if(localStorage.getItem('levecrm_v41_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v41_cleaned','1');}
+if(localStorage.getItem('levecrm_v42_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v42_cleaned','1');}
