@@ -1,4 +1,4 @@
-/* LeveCRM v40 — base persistente, segurança RLS, histórico, propostas e correções gerais.
+/* LeveCRM v41 — base persistente, segurança RLS, histórico, propostas e correções gerais.
    Pacote revisado e validado em 23/06/2026. */
 
 /* ===== main ===== */
@@ -41,27 +41,39 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=41';
+const INITIAL_IMPORT_MARKER='__LEADS_V41_IMPORTED__';
 
 /* ══════════════════════════════════════
    LISTAS
 ══════════════════════════════════════ */
 const LISTS={
   empreendimento:[],
-  etapa:['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO','FECHADO / GANHO','STAND BY','PERDIDO'],
+  etapa:['Prioritário','Qualificação','Retomada','Sem foco'],
   prioridade:['Altíssima','Alta','Média','Baixa'],
   origem:[],
   responsavel:[],
   visita:['Não','Corretor','Senger','Ambos'],
-  motivo_perda:['Investimento baixo','Parcelamento direto','Permuta inviável','Vai aguardar','Curiosidade','Após valor some','Comprou outro','Restritivo CPF','Insatisfação c/ produto','Outro']
+  motivo_perda:[]
 };
-const ETAPA_MAP={'Novo':'NOVO / INICIAL','Em atendimento':'ATENDIMENTO','Evoluindo':'VISITA / PROPOSTA','Negociação':'NEGOCIAÇÃO','Stand by':'STAND BY','Perdido':'PERDIDO','Contato feito':'ATENDIMENTO','Visitou':'VISITA / PROPOSTA','Proposta':'VISITA / PROPOSTA','Fechado':'FECHADO / GANHO','FECHADO':'FECHADO / GANHO','Ganho':'FECHADO / GANHO'};
+const ETAPA_MAP={
+  'Prioritario':'Prioritário','Prioritário':'Prioritário',
+  'Qualificacao':'Qualificação','Qualificação':'Qualificação',
+  'Retomada':'Retomada','Sem foco':'Sem foco',
+  'Novo':'Qualificação','NOVO / INICIAL':'Qualificação',
+  'Em atendimento':'Qualificação','ATENDIMENTO':'Qualificação','Contato feito':'Qualificação',
+  'Evoluindo':'Prioritário','VISITA / PROPOSTA':'Prioritário','Visitou':'Prioritário','Proposta':'Prioritário',
+  'Negociação':'Prioritário','NEGOCIAÇÃO':'Prioritário','Fechado':'Prioritário','FECHADO':'Prioritário','FECHADO / GANHO':'Prioritário','Ganho':'Prioritário',
+  'Stand by':'Retomada','STAND BY':'Retomada','Perdido':'Sem foco','PERDIDO':'Sem foco'
+};
 const MOTIVO_MAP={'Preço':'Investimento baixo','Parcelamento':'Parcelamento direto','Financiamento':'Parcelamento direto','Nunca respondeu':'Após valor some','Escolheu outro':'Comprou outro','Comprou outro':'Comprou outro','Sumiu':'Após valor some'};
 
 
 /* ══════════════════════════════════════
    NORMALIZAÇÃO
 ══════════════════════════════════════ */
-function normEtapa(e){const s=String(e||'').trim();if(LISTS.etapa.includes(s))return s;if(ETAPA_MAP[s])return ETAPA_MAP[s];return'ATENDIMENTO';}
+function normEtapa(e){const s=String(e||'').trim();if(LISTS.etapa.includes(s))return s;if(ETAPA_MAP[s])return ETAPA_MAP[s];return'Qualificação';}
+function stagePriority(etapa){const e=normEtapa(etapa);return e==='Prioritário'?'Altíssima':e==='Qualificação'?'Alta':e==='Retomada'?'Média':'Baixa';}
 function normMotivo(m){const v=String(m||'').trim();if(!v)return'';if(LISTS.motivo_perda.includes(v))return v;if(MOTIVO_MAP[v])return MOTIVO_MAP[v];return v;}
 function normVisita(v){const s=String(v||'').trim();return LISTS.visita.includes(s)?s:'Não';}
 function normProx(v){const s=String(v??'').trim();return s?s.slice(0,10):null;}
@@ -359,7 +371,8 @@ async function sbFetch(path,{method='GET',body=null,prefer='return=representatio
   const r=await fetch(`${SB_URL}/rest/v1/${path}`,{method,headers:{'apikey':SB_KEY,'Authorization':`Bearer ${bearer}`,'Content-Type':'application/json','apikey':SB_KEY,'Prefer':prefer},body:body?JSON.stringify(body):null});
   if(!r.ok){const t=await r.text().catch(()=>'');throw new Error(`${r.status} ${r.statusText} — ${t}`);}
   if(r.status===204)return null;
-  return r.json();
+  const raw=await r.text();
+  return raw?JSON.parse(raw):null;
 }
 async function loadAttaches(){
   try{
@@ -476,6 +489,14 @@ function prioVisual(p){
   if(p==='Média')return{cls:'p-med',lbl:`<span class="card-prio prio-med">Média</span>`};
   return{cls:'p-low',lbl:`<span class="card-prio prio-low">Baixa</span>`};
 }
+function blockVisual(etapa){
+  const e=normEtapa(etapa);
+  if(e==='Prioritário')return{cls:'p-top',lbl:'<span class="card-prio prio-top">Prioritário</span>'};
+  if(e==='Qualificação')return{cls:'p-high',lbl:'<span class="card-prio prio-high">Qualificação</span>'};
+  if(e==='Retomada')return{cls:'p-med',lbl:'<span class="card-prio prio-med">Retomada</span>'};
+  return{cls:'p-low',lbl:'<span class="card-prio prio-low">Sem foco</span>'};
+}
+
 function waSvg(){return`<svg viewBox="0 0 32 32"><path d="M16 .5C7.4.5.5 7.4.5 16c0 2.8.7 5.5 2.1 7.9L.5 31.5l7.8-2.1c2.3 1.3 4.9 2 7.7 2 8.6 0 15.5-6.9 15.5-15.5S24.6.5 16 .5zm0 28.4c-2.4 0-4.7-.6-6.7-1.8l-.5-.3-4.6 1.2 1.2-4.5-.3-.5c-1.3-2.1-2-4.4-2-6.9 0-7.2 5.8-13 13-13s13 5.8 13 13-5.8 13-13 13zm7.3-9.8c-.4-.2-2.4-1.2-2.8-1.3-.4-.2-.7-.2-1 .2s-1.1 1.3-1.4 1.6c-.3.3-.5.3-.9.1-.4-.2-1.7-.6-3.2-2-1.2-1.1-2-2.5-2.2-2.9-.2-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.2.2-.4.3-.6.1-.2 0-.5-.1-.7-.2-.2-1-.8-1.4-1.1-.3-.3-.7-.3-1-.3-.3 0-.6 0-.9.3-.3.3-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.3 3.6 5.6 5 .8.3 1.4.5 1.9.6.8.2 1.6.2 2.2.1.7-.1 2.4-1 2.7-2 .3-1 .3-1.9.2-2.1-.1-.2-.4-.3-.8-.5z"/></svg>`;}
 
 function shortLeadName(nome,max=28){
@@ -492,7 +513,7 @@ function cardHTML(l){
   const etapa=normEtapa(l.etapa);
   const isPerd=etapa==='PERDIDO';const isSB=etapa==='STAND BY';
   const scheduled=hasActiveScheduledContact(l)&&!isPerd;
-  const pvBase=etapa==='FECHADO / GANHO'?prioVisual('Fechado'):prioVisual(l.prioridade||'Baixa');
+  const pvBase=blockVisual(etapa);
   const pv=scheduled?{cls:'p-scheduled',lbl:pvBase.lbl}:pvBase;
   const wa=l.telefone?`<a class="wa-btn" href="https://wa.me/${normPhone(l.telefone)}" target="_blank" onclick="event.stopPropagation()">${waSvg()}</a>`:'';
   const nc=nextContact(l);
@@ -555,36 +576,20 @@ function setSelectValue(select,value){
   }
 }
 function setMobilePriorityFilter(kind,value){
-  const desktop=document.getElementById('fPri'),mobile=document.getElementById('mfPri');
-  MOBILE_STAGE_FILTER=kind==='closed'?'closed':'';
-  if(kind==='priority'){
-    SHOW_LOST=false;SHOW_SB=false;setSelectValue(desktop,value);setSelectValue(mobile,value);
-  }else{
-    setSelectValue(desktop,'');setSelectValue(mobile,'');
-    SHOW_LOST=kind==='lost';SHOW_SB=kind==='standby';
-  }
-  refreshFilterButtonLabels();render();
+  const stage=kind==='stage'?normEtapa(value):'';
+  MOBILE_STAGE_FILTER=MOBILE_STAGE_FILTER===stage?'':stage;
+  render();
 }
 function mobilePriorityDashboardHTML(allLeads,visibleLeads){
   const total=Math.max(1,allLeads.length);
-  const activePriority=document.getElementById('fPri')?.value||'';
-  const definitions=[
-    ['FECHADO / GANHO','closed','✓'],['Altíssima','priority','↑'],['Alta','priority','+'],['Média','priority','•'],['Baixa','priority','−'],['PERDIDO','lost','×'],['STAND BY','standby','Ⅱ']
-  ];
-  const cards=definitions.map(([value,kind,icon])=>{
-    const count=allLeads.filter(l=>{
-      const etapa=normEtapa(l.etapa);
-      if(kind==='lost')return etapa==='PERDIDO';
-      if(kind==='standby')return etapa==='STAND BY';
-      if(kind==='closed')return etapa==='FECHADO / GANHO';
-      return !['PERDIDO','STAND BY','FECHADO / GANHO'].includes(etapa)&&String(l.prioridade||'Baixa')===value;
-    }).length;
+  const cards=LISTS.etapa.map((value,index)=>{
+    const count=allLeads.filter(l=>normEtapa(l.etapa)===value).length;
     const pct=Math.round(count/total*100);
-    const active=(kind==='priority'&&activePriority===value)||(kind==='lost'&&SHOW_LOST)||(kind==='standby'&&SHOW_SB)||(kind==='closed'&&MOBILE_STAGE_FILTER==='closed');
-    const label=value==='PERDIDO'?'Perdido':value==='STAND BY'?'Stand by':value==='FECHADO / GANHO'?'Ganhos':value;
-    return `<button type="button" class="mp-card ${active?'is-active':''}" data-kind="${kind}" data-filter="${escH(value)}"><div class="mp-top"><div class="mp-label">${escH(label)}</div><div class="mp-icon">${icon}</div></div><div class="mp-num">${count}</div><div class="mp-bottom"><div class="mp-bar"><div class="mp-fill" style="width:${Math.max(5,pct)}%"></div></div><div class="mp-pct">${pct}%</div></div></button>`;
+    const active=MOBILE_STAGE_FILTER===value;
+    const icon=['↑','?','↻','—'][index]||'•';
+    return `<button type="button" class="mp-card ${active?'is-active':''}" data-kind="stage" data-filter="${escH(value)}"><div class="mp-top"><div class="mp-label">${escH(value)}</div><div class="mp-icon">${icon}</div></div><div class="mp-num">${count}</div><div class="mp-bottom"><div class="mp-bar"><div class="mp-fill" style="width:${Math.max(5,pct)}%"></div></div><div class="mp-pct">${pct}%</div></div></button>`;
   }).join('');
-  return `<div class="mobile-priority-dashboard">${cards}</div><div class="mobile-list-title"><strong>Leads</strong><span>${visibleLeads.length} na lista</span></div>`;
+  return `<div class="mobile-priority-dashboard">${cards}</div><div class="mobile-list-title"><strong>${MOBILE_STAGE_FILTER?escH(MOBILE_STAGE_FILTER):'Todos os leads'}</strong><span>${visibleLeads.length} na lista</span></div>`;
 }
 function wireMobilePriorityFilters(container){
   container.querySelectorAll('.mp-card').forEach(btn=>btn.addEventListener('click',()=>setMobilePriorityFilter(btn.dataset.kind,btn.dataset.filter)));
@@ -592,30 +597,24 @@ function wireMobilePriorityFilters(container){
 
 function render(){
   const leads=filtered();
-  const ativos=leads.filter(l=>normEtapa(l.etapa)!=='PERDIDO').length;
-  const perdidos=leads.filter(l=>normEtapa(l.etapa)==='PERDIDO').length;
-  document.getElementById('nAtivos').textContent=ativos;
-  document.getElementById('nPerdidos').textContent=perdidos;
-  document.getElementById('nTotal').textContent=ativos+perdidos;
-  document.getElementById('btnToggleLost').textContent=SHOW_LOST?'Ocultar perdidos':'Mostrar perdidos';
-  document.getElementById('btnToggleSb').textContent=SHOW_SB?'Ocultar Stand by':'Mostrar Stand by';
+  const counts=Object.fromEntries(LISTS.etapa.map(etapa=>[etapa,leads.filter(l=>normEtapa(l.etapa)===etapa).length]));
+  const setCount=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=String(value);};
+  setCount('nPrioritario',counts['Prioritário']||0);
+  setCount('nQualificacao',counts['Qualificação']||0);
+  setCount('nRetomada',counts['Retomada']||0);
+  setCount('nSemFoco',counts['Sem foco']||0);
+  setCount('nTotal',leads.length);
   updateAlertBanner();
   updateAgendaBadge();
 
   const board=document.getElementById('board');board.innerHTML='';
 
   if(isMobileKanban()){
-    const mobileLeads=sortMobilePriority(leads.filter(l=>{
-      const e=normEtapa(l.etapa);
-      if(MOBILE_STAGE_FILTER==='closed')return e==='FECHADO / GANHO';
-      if(e==='PERDIDO')return SHOW_LOST;
-      if(e==='STAND BY')return SHOW_SB;
-      return true;
-    }));
+    const mobileLeads=sortMobilePriority(leads.filter(l=>!MOBILE_STAGE_FILTER||normEtapa(l.etapa)===MOBILE_STAGE_FILTER));
     const sec=document.createElement('section');
     sec.className='col mobile-priority-col';
-    sec.dataset.etapa='MOBILE_PRIORITY';
-    sec.innerHTML=`<div class="col-head"><span class="cname">LEADS POR PRIORIDADE</span><span class="cnt">${mobileLeads.length}</span></div><div class="dropzone mobile-priority-list">${mobilePriorityDashboardHTML(leads,mobileLeads)}${mobileLeads.map(cardHTML).join('')}</div>`;
+    sec.dataset.etapa='MOBILE_BLOCKS';
+    sec.innerHTML=`<div class="col-head"><span class="cname">BLOCOS COMERCIAIS</span><span class="cnt">${mobileLeads.length}</span></div><div class="dropzone mobile-priority-list">${mobilePriorityDashboardHTML(leads,mobileLeads)}${mobileLeads.map(cardHTML).join('')}</div>`;
     board.appendChild(sec);
     wireMobilePriorityFilters(sec);
     wireMobileCards();
@@ -623,8 +622,7 @@ function render(){
     return;
   }
 
-  const visibles=LISTS.etapa.filter(e=>{if(e==='PERDIDO')return SHOW_LOST;if(e==='STAND BY')return SHOW_SB;return true;});
-  visibles.forEach(etapa=>{
+  LISTS.etapa.forEach(etapa=>{
     const inCol=sortLeads(leads,etapa);
     const sec=document.createElement('section');
     sec.className='col';sec.dataset.etapa=etapa;
@@ -753,10 +751,9 @@ function hasChanges(){return dlg.open&&origSnap!==null&&formSnap()!==origSnap;}
 function confirmClose(){if(!hasChanges())return true;return confirm('Alterações não salvas. Fechar mesmo assim?');}
 function closeDialog(force=false){if(!force&&!confirmClose())return false;dlg.close();editingId=null;origSnap=null;document.getElementById('aiChipResult').className='ai-result';return true;}
 function toggleMotivo(){
-  const lost=normEtapa(F('etapa').value)==='PERDIDO';
-  F('motivo_perda').disabled=!lost;F('motivo_perda').required=lost;
-  if(lost)F('prioridade').value='Baixa';else F('motivo_perda').value='';
-  leadForm.classList.toggle('show-mobile-motivo',lost);document.getElementById('dlg')?.classList.toggle('show-mobile-motivo',lost);
+  F('motivo_perda').disabled=true;F('motivo_perda').required=false;F('motivo_perda').value='';
+  F('prioridade').value=stagePriority(F('etapa').value);
+  leadForm.classList.remove('show-mobile-motivo');document.getElementById('dlg')?.classList.remove('show-mobile-motivo');
 }
 
 function fillFormSelects(){
@@ -768,7 +765,7 @@ function openNew(){
   editingId=null;origSnap=null;leadForm.classList.add('is-new-lead');document.getElementById('dlgTitle').textContent='Novo Lead';document.getElementById('btnDelete').style.display='none';
   fillFormSelects();
   F('data_inicio').value=todayISO();F('proximo_contato').value='';F('nome').value='';F('telefone').value='';
-  F('empreendimento').value='Outros';F('etapa').value='NOVO / INICIAL';F('prioridade').value='Baixa';
+  F('empreendimento').value=LISTS.empreendimento[0]||'Outros';F('etapa').value='Qualificação';F('prioridade').value=stagePriority('Qualificação');
   F('origem').value=LISTS.origem[0]||'';F('responsavel').value=LISTS.responsavel[0]||'Corretor';
   F('visita').value='Não';F('motivo_perda').value='';F('observacao').value='';
   toggleMotivo();document.getElementById('attachList').innerHTML='';document.getElementById('attachHint').textContent=' Salve o lead primeiro.';document.getElementById('attachBtn').disabled=true;
@@ -782,13 +779,13 @@ function openEdit(id,forcePerd=false){
   fillFormSelects();
   F('data_inicio').value=l.data_inicio||todayISO();F('proximo_contato').value=normProx(l.proximo_contato)||'';
   F('nome').value=l.nome||'';F('telefone').value=l.telefone||'';F('empreendimento').value=l.empreendimento||'Outros';
-  F('etapa').value=forcePerd?'PERDIDO':normEtapa(l.etapa||'NOVO / INICIAL');
-  F('prioridade').value=l.prioridade||'Baixa';F('origem').value=l.origem||'';
+  F('etapa').value=normEtapa(l.etapa||'Qualificação');
+  F('prioridade').value=stagePriority(l.etapa);F('origem').value=l.origem||'';
   F('responsavel').value=l.responsavel||LISTS.responsavel[0];F('visita').value=normVisita(l.visita||'Não');
   F('motivo_perda').value=normMotivo(l.motivo_perda||'');F('observacao').value=l.observacao||'';
   document.querySelectorAll('.lead-attachment-clean-chip').forEach(el=>el.remove());
   toggleMotivo();syncAttachUI();renderHistory(id);
-  origSnap=leadSnap({...l,etapa:forcePerd?'PERDIDO':normEtapa(l.etapa||'NOVO / INICIAL')});
+  origSnap=leadSnap({...l,etapa:normEtapa(l.etapa||'Qualificação'),prioridade:stagePriority(l.etapa)});
   dlg.showModal();
 }
 
@@ -808,94 +805,75 @@ function syncAttachUI(){
 function renderDashboard(){
   const el=document.getElementById('dashContent');if(!el)return;
   const today=dayStart(new Date());
-  const active=ALL.filter(l=>!['PERDIDO','FECHADO / GANHO'].includes(normEtapa(l.etapa)));
-  const lost=ALL.filter(l=>normEtapa(l.etapa)==='PERDIDO');
-  const closedLeads=ALL.filter(l=>normEtapa(l.etapa)==='FECHADO / GANHO'&&l.data_fechamento&&l.criado_em);
-  const closed=ALL.filter(l=>normEtapa(l.etapa)==='FECHADO / GANHO').length;
+  const active=[...ALL];
   const overdue=getOverdue();
-  const soon=active.filter(l=>{const nc=normProx(l.proximo_contato);if(!nc)return false;const d=dayStart(parseDate(nc));const diff=Math.floor((d-today)/86400000);return diff>0&&diff<=3;});
-
-  // Conversão considera apenas oportunidades concluídas: ganhas + perdidas.
-  const finalized=closed+lost.length;
-  const convRate=finalized>0?Math.round(closed/finalized*100):0;
-
-  // Tempo médio usa a data real de fechamento, nunca a última edição do cadastro.
-  const avgDays=closedLeads.length?Math.round(closedLeads.reduce((sum,l)=>{const created=parseDate(l.criado_em),closedAt=parseDate(l.data_fechamento);return sum+(created&&closedAt?Math.max(0,Math.floor((closedAt-created)/86400000)):0);},0)/closedLeads.length):0;
-
-  // Funnel
-  const funnel=['NOVO / INICIAL','ATENDIMENTO','VISITA / PROPOSTA','NEGOCIAÇÃO'];
-  const fColors=['#1B2E4B','#2B5EA7','#4A90D9','#D4AF37'];
-  const fCounts=funnel.map(e=>active.filter(l=>normEtapa(l.etapa)===e).length);
+  const counts=Object.fromEntries(LISTS.etapa.map(etapa=>[etapa,active.filter(l=>normEtapa(l.etapa)===etapa).length]));
+  const funnel=[...LISTS.etapa];
+  const fColors=['#D4AF37','#2B5EA7','#4A90D9','#8A9BB0'];
+  const fCounts=funnel.map(e=>counts[e]||0);
   const maxF=Math.max(...fCounts,1);
-  const sbCount=active.filter(l=>normEtapa(l.etapa)==='STAND BY').length;
 
-  // Próximos contatos
   const contacts=active.filter(l=>normProx(l.proximo_contato)).map(l=>{
     const d=dayStart(parseDate(normProx(l.proximo_contato)));
     const diff=Math.floor((d-today)/86400000);
     return{...l,_diff:diff,_d:d};
   }).sort((a,b)=>a._diff-b._diff).slice(0,10);
 
-  // Origem stats
   const origCounts={};active.forEach(l=>{if(l.origem)origCounts[l.origem]=(origCounts[l.origem]||0)+1;});
   const origSorted=Object.entries(origCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const maxOrig=origSorted[0]?.[1]||1;
 
-  // Por responsável
   const respCounts={};LISTS.responsavel.forEach(r=>{respCounts[r]=active.filter(l=>l.responsavel===r).length;});
 
   el.innerHTML=`
     <div class="dash-stats">
-      <div class="stat-card c-blue"><div class="stat-lbl">Leads Ativos</div><div class="stat-val">${active.length}</div><div class="stat-sub">Em andamento</div></div>
-      <div class="stat-card c-amber"><div class="stat-lbl">Em Atraso / Hoje</div><div class="stat-val">${overdue.length}</div><div class="stat-sub">${overdue.length?'⚠️ Ação necessária':'✓ Em dia'}</div></div>
-      <div class="stat-card c-green"><div class="stat-lbl">Taxa de Conversão</div><div class="stat-val">${convRate}%</div><div class="stat-sub">${closed} ganhos de ${finalized} concluídos</div></div>
-      <div class="stat-card c-red"><div class="stat-lbl">Tempo Médio Fecham.</div><div class="stat-val">${avgDays}d</div><div class="stat-sub">${closedLeads.length} leads fechados</div></div>
+      <div class="stat-card c-amber"><div class="stat-lbl">Prioritário</div><div class="stat-val">${counts['Prioritário']||0}</div><div class="stat-sub">Atender primeiro</div></div>
+      <div class="stat-card c-blue"><div class="stat-lbl">Qualificação</div><div class="stat-val">${counts['Qualificação']||0}</div><div class="stat-sub">Entender necessidade e condição</div></div>
+      <div class="stat-card c-green"><div class="stat-lbl">Retomada</div><div class="stat-val">${counts['Retomada']||0}</div><div class="stat-sub">Conversas para reabrir</div></div>
+      <div class="stat-card c-red"><div class="stat-lbl">Sem foco</div><div class="stat-val">${counts['Sem foco']||0}</div><div class="stat-sub">Baixo sinal comercial</div></div>
     </div>
 
     <div class="dash-2col">
       <div class="dpanel">
-        <div class="dpanel-head">🔽 Funil de Vendas<span class="dpanel-badge">${active.length} ativos</span></div>
-        ${funnel.map((e,i)=>`<div class="funnel-row"><div class="funnel-lbl">${e}</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(Math.round(fCounts[i]/maxF*100),3)}%;background:${fColors[i]}">${fCounts[i]>0?fCounts[i]:''}</div></div><div class="funnel-cnt">${fCounts[i]}</div></div>`).join('')}
-        <div class="funnel-row"><div class="funnel-lbl">STAND BY</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(Math.round(sbCount/maxF*100),3)}%;background:#8A9BB0">${sbCount>0?sbCount:''}</div></div><div class="funnel-cnt">${sbCount}</div></div>
-        <div class="funnel-row"><div class="funnel-lbl">PERDIDOS</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(Math.round(lost.length/maxF*100),3)}%;background:#D64545">${lost.length>0?lost.length:''}</div></div><div class="funnel-cnt">${lost.length}</div></div>
+        <div class="dpanel-head">Distribuição comercial<span class="dpanel-badge">${active.length} leads</span></div>
+        ${funnel.map((e,i)=>`<div class="funnel-row"><div class="funnel-lbl">${e.toUpperCase()}</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(Math.round(fCounts[i]/maxF*100),3)}%;background:${fColors[i]}">${fCounts[i]>0?fCounts[i]:''}</div></div><div class="funnel-cnt">${fCounts[i]}</div></div>`).join('')}
       </div>
 
       <div class="dpanel">
-        <div class="dpanel-head">🔔 Próximos Contatos<span class="dpanel-badge">${contacts.length} agendados</span></div>
+        <div class="dpanel-head">Próximos contatos<span class="dpanel-badge">${contacts.length} agendados</span></div>
         ${contacts.length===0?`<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center">Nenhum contato agendado</div>`:
           contacts.map(l=>{
             const dc=l._diff<0?'past':l._diff===0?'today':'soon';
             const ds=l._diff<0?`${Math.abs(l._diff)}d atraso`:l._diff===0?'HOJE':`${pad2(l._d.getDate())}/${pad2(l._d.getMonth()+1)}`;
-            return`<div class="contact-row" onclick="openEdit('${escH(l.id)}')"><div class="cdot ${dc}"></div><div style="flex:1;min-width:0"><div class="cname">${escH(l.nome)}</div><div class="cinfo">${escH(l.empreendimento||'—')} · ${escH(l.responsavel||'—')}</div></div><div class="cdate ${dc}">${ds}</div></div>`;
+            return`<div class="contact-row" onclick="openEdit('${escH(l.id)}')"><div class="cdot ${dc}"></div><div style="flex:1;min-width:0"><div class="cname">${escH(l.nome)}</div><div class="cinfo">${escH(l.empreendimento||'—')} · ${escH(l.etapa||'—')}</div></div><div class="cdate ${dc}">${ds}</div></div>`;
           }).join('')}
       </div>
     </div>
 
     <div class="dash-2col">
       <div class="dpanel">
-        <div class="dpanel-head">📍 Leads por Origem</div>
+        <div class="dpanel-head">Leads por origem</div>
         ${origSorted.map(([o,c])=>`<div class="origin-bar"><div class="origin-lbl">${escH(o)}</div><div class="origin-track"><div class="origin-fill" style="width:${Math.round(c/maxOrig*100)}%"></div></div><div class="origin-pct">${c}</div></div>`).join('')}
         ${!origSorted.length?'<div style="padding:12px;font-size:12px;color:var(--muted)">Sem dados</div>':''}
       </div>
 
       <div class="dpanel">
-        <div class="dpanel-head">👤 Por Responsável</div>
+        <div class="dpanel-head">Por responsável</div>
         <div class="resp-grid">${LISTS.responsavel.map(r=>`<div class="resp-item"><div class="resp-lbl">${escH(r)}</div><div class="resp-cnt">${respCounts[r]||0}</div></div>`).join('')}</div>
       </div>
     </div>
 
     <div class="dpanel">
-      <div class="dpanel-head">💡 Insight Semanal (IA)<span class="dpanel-badge" onclick="aiInsight()" style="cursor:pointer">✨ Gerar</span></div>
-      <div class="insight-box" id="insightBox">Clique em "✨ Gerar" para a inteligência artificial analisar seus dados e sugerir ações práticas.</div>
+      <div class="dpanel-head">Insight semanal (IA)<span class="dpanel-badge" onclick="aiInsight()" style="cursor:pointer">Gerar</span></div>
+      <div class="insight-box" id="insightBox">Clique em “Gerar” para analisar a distribuição dos leads e sugerir ações práticas.</div>
     </div>
 
     <div class="dpanel">
-      <div class="dpanel-head">📅 Compromissos de Hoje<span class="dpanel-badge" onclick="openAgenda()" style="cursor:pointer">Ver agenda →</span></div>
+      <div class="dpanel-head">Compromissos de hoje<span class="dpanel-badge" onclick="openAgenda()" style="cursor:pointer">Ver agenda →</span></div>
       <div id="dashToday" style="padding:4px 0"></div>
     </div>
   `;
 
-  // Agenda hoje
   const todayKey=agKey(today.getFullYear(),today.getMonth(),today.getDate());
   const tevts=agForDay(todayKey);
   const dt=document.getElementById('dashToday');
@@ -932,13 +910,13 @@ async function aiLeadAction(type){
   const prompts={
     resumo:`Assistente de CRM imobiliário. Resuma em 2 ou 3 linhas o histórico deste lead. Cliente: ${nome}. Imóvel: ${emp}. Histórico: ${obs}. Responda apenas com o resumo.`,
     acao:`Assistente de CRM imobiliário. Sugira a próxima ação mais eficaz para avançar esta venda. Cliente: ${nome}. Imóvel: ${emp}. Histórico: ${obs}. Máximo de 2 linhas, direto ao ponto.`,
-    prio:`Assistente de CRM imobiliário. Classifique a prioridade como Baixa, Média, Alta ou Altíssima e explique em uma linha. Cliente: ${nome}. Imóvel: ${emp}. Histórico: ${obs}. Formato: PRIORIDADE: nível; Motivo: texto.`
+    prio:`Assistente de CRM imobiliário. Classifique o lead em um único bloco: Prioritário (sinal concreto e sem trava pesada), Qualificação (precisa entender dinheiro, prazo, produto ou trava), Retomada (conversa parada ou aguardando retorno) ou Sem foco (pouco dado ou baixo sinal de compra). Cliente: ${nome}. Imóvel: ${emp}. Histórico: ${obs}. Formato: BLOCO: nome; Motivo: texto.`
   };
   try{
     const text=await callClaude(prompts[type],220);resultEl.textContent=text;
     if(type==='prio'){
-      const m=text.match(/PRIORIDADE:\s*(Baixa|Média|Alta|Altíssima)/i);
-      if(m){const val=LISTS.prioridade.find(x=>x.toLowerCase()===m[1].toLowerCase());if(val){F('prioridade').value=val;showToast(`Prioridade: ${val}`);}}
+      const m=text.match(/BLOCO:\s*(Prioritário|Prioritario|Qualificação|Qualificacao|Retomada|Sem foco)/i);
+      if(m){const val=normEtapa(m[1]);F('etapa').value=val;toggleMotivo();showToast(`Bloco: ${val}`);}
     }
   }catch(e){resultEl.textContent=`Erro: ${e.message}`;}
   finally{['aiBtnResumo','aiBtnAcao','aiBtnPrio'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});}
@@ -946,12 +924,9 @@ async function aiLeadAction(type){
 async function aiInsight(){
   const el=document.getElementById('insightBox');if(!el)return;
   el.textContent='Gerando insight…';
-  const active=ALL.filter(l=>normEtapa(l.etapa)!=='PERDIDO');
-  const lost=ALL.filter(l=>normEtapa(l.etapa)==='PERDIDO');
-  const mc={};lost.forEach(l=>{if(l.motivo_perda)mc[l.motivo_perda]=(mc[l.motivo_perda]||0)+1;});
-  const top3=Object.entries(mc).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ');
-  const ctx=`Leads ativos: ${active.length}; Perdidos: ${lost.length}; Contatos vencidos: ${getOverdue().length}; Motivos principais: ${top3||'nenhum'}; Empreendimentos: ${[...new Set(active.map(l=>l.empreendimento).filter(Boolean))].slice(0,5).join(', ')}`;
-  try{el.textContent='💡 '+await callClaude(`Consultor imobiliário: escreva um insight prático de 2 ou 3 frases para melhorar os resultados nesta semana. ${ctx}`,180);}
+  const counts=Object.fromEntries(LISTS.etapa.map(etapa=>[etapa,ALL.filter(l=>normEtapa(l.etapa)===etapa).length]));
+  const ctx=`Total: ${ALL.length}; Prioritário: ${counts['Prioritário']||0}; Qualificação: ${counts['Qualificação']||0}; Retomada: ${counts['Retomada']||0}; Sem foco: ${counts['Sem foco']||0}; Contatos vencidos: ${getOverdue().length}; Empreendimentos: ${[...new Set(ALL.map(l=>l.empreendimento).filter(Boolean))].slice(0,6).join(', ')}`;
+  try{el.textContent='💡 '+await callClaude(`Consultor imobiliário: escreva um insight prático de 2 ou 3 frases para melhorar os resultados nesta semana, priorizando os quatro blocos comerciais. ${ctx}`,180);}
   catch(e){el.textContent=`Erro: ${e.message}`;}
 }
 function openAiImport(){
@@ -1015,13 +990,13 @@ async function aiUse(){
   const observacao=aiExtracted.obs?appendObs('',`Importado por imagem: ${aiExtracted.obs}`):appendObs('',`Importado por imagem.`);
   const lead={
     id:cid(),
-    ordem:orderForTop('NOVO / INICIAL'),
+    ordem:orderForTop('Qualificação'),
     data_inicio:todayISO(),
     proximo_contato:null,
     nome,
     telefone,
     empreendimento,
-    etapa:'NOVO / INICIAL',
+    etapa:'Qualificação',
     prioridade:'Baixa',
     origem:LISTS.origem[0]||'',
     responsavel:LISTS.responsavel[0]||'Corretor',
@@ -1056,7 +1031,7 @@ async function saveQuickLead(){
   const prioridade=document.getElementById('qlPrioridade').value||'Baixa';
   const btn=document.getElementById('qlSaveBtn');const txt=document.getElementById('qlSaveTxt');
   btn.disabled=true;txt.innerHTML=`<span class="ql-spinner"></span> Salvando…`;
-  const ok=await upsertLead({id:cid(),ordem:orderForTop('NOVO / INICIAL'),data_inicio:todayISO(),proximo_contato:null,nome,telefone:fone.replace(/\D/g,''),empreendimento:'Outros',etapa:'NOVO / INICIAL',prioridade,origem:LISTS.origem[0]||'',responsavel:LISTS.responsavel[0]||'Corretor',visita:'Não',motivo_perda:'',observacao:'',criado_em:nowISO(),atualizado_em:nowISO()});
+  const ok=await upsertLead({id:cid(),ordem:orderForTop('Qualificação'),data_inicio:todayISO(),proximo_contato:null,nome,telefone:fone.replace(/\D/g,''),empreendimento:'Outros',etapa:'Qualificação',prioridade,origem:LISTS.origem[0]||'',responsavel:LISTS.responsavel[0]||'Corretor',visita:'Não',motivo_perda:'',observacao:'',criado_em:nowISO(),atualizado_em:nowISO()});
   if(ok){closeQuickLead();showToast(`Lead "${nome}" salvo! ⚡`);switchView('kanban');}
   else{btn.disabled=false;txt.textContent='✅ Salvar Lead';}
 }
@@ -1411,7 +1386,7 @@ function selectedLead(){return ALL.find(x=>String(x.id)===String(SELECTED_LEAD_I
 function leadModulePayload(lead){return lead?{id:lead.id,nome:lead.nome||'',telefone:lead.telefone||'',empreendimento:lead.empreendimento||'',etapa:normEtapa(lead.etapa),prioridade:lead.prioridade||'',observacao:lead.observacao||'',proximo_contato:lead.proximo_contato||''}:null;}
 function populateDirecionaFromLead(lead){
   if(!lead)return;const input=document.getElementById('clientMessage');if(!input)return;
-  input.value=[`Cliente: ${lead.nome||'—'}`,`Telefone: ${lead.telefone||'—'}`,`Empreendimento: ${lead.empreendimento||'—'}`,`Etapa: ${normEtapa(lead.etapa)}`,`Prioridade: ${lead.prioridade||'—'}`,`Próximo contato: ${lead.proximo_contato||'—'}`,'','Histórico do atendimento:',lead.observacao||'Sem histórico registrado.'].join('\n');
+  input.value=[`Cliente: ${lead.nome||'—'}`,`Telefone: ${lead.telefone||'—'}`,`Empreendimento: ${lead.empreendimento||'—'}`,`Bloco comercial: ${normEtapa(lead.etapa)}`,`Próximo contato: ${lead.proximo_contato||'—'}`,'','Histórico do atendimento:',lead.observacao||'Sem histórico registrado.'].join('\n');
   input.dispatchEvent(new Event('input',{bubbles:true}));
 }
 function sendSelectedLeadToProposal(){
@@ -1442,7 +1417,7 @@ function switchView(name){
   if(name==='propostas')setTimeout(sendSelectedLeadToProposal,120);
   if(window.innerWidth<=640)document.body.classList.remove('sidebar-open');
 }
-function fillSel(id,items,label){const s=document.getElementById(id);s.innerHTML=`<option value="">${label}</option>`+items.map(v=>`<option value="${escH(v)}">${escH(v)}</option>`).join('');}
+function fillSel(id,items,label){const s=document.getElementById(id);if(!s)return;s.innerHTML=`<option value="">${label}</option>`+items.map(v=>`<option value="${escH(v)}">${escH(v)}</option>`).join('');}
 function syncFilterSelects(){
   fillSel('fEmp',LISTS.empreendimento,'Empreendimento');
   fillSel('fOrig',LISTS.origem,'Origem');
@@ -1493,7 +1468,7 @@ function exportCSV(){
     {key:'nome',label:'Nome'},
     {key:'telefone',label:'Telefone'},
     {key:'empreendimento',label:'Empreendimento'},
-    {key:'etapa',label:'Etapa'},
+    {key:'etapa',label:'Bloco Comercial'},
     {key:'prioridade',label:'Prioridade'},
     {key:'origem',label:'Origem'},
     {key:'responsavel',label:'Responsavel'},
@@ -1531,15 +1506,14 @@ async function importCSV(text){
     try{
       const phone=String(r.telefone||r.fone||'').replace(/\D/g,'');
       const existing=ALL.find(x=>(r.id&&String(x.id)===String(r.id))||(phone&&String(x.telefone||'').replace(/\D/g,'')===phone)||String(x.nome||'').trim().toLowerCase()===String(r.nome||'').trim().toLowerCase());
-      const legacyClosed=String(r.prioridade||'').trim()==='Fechado';
-      const etapa=legacyClosed?'FECHADO / GANHO':normEtapa(r.etapa||'NOVO / INICIAL');
+      const etapa=normEtapa(r.etapa||r.bloco_comercial||'Qualificação');
       const payload={
         id:existing?.id||cid(),ordem:Number(r.ordem)||existing?.ordem||orderForTop(etapa),
         data_inicio:normProx(r.data_inicio)||existing?.data_inicio||todayISO(),proximo_contato:normProx(r.proximo_contato),
         nome:String(r.nome||'').trim(),telefone:phone,empreendimento:String(r.empreendimento||'Outros').trim()||'Outros',
-        etapa,prioridade:legacyClosed?'Alta':(LISTS.prioridade.includes(r.prioridade)?r.prioridade:'Baixa'),origem:String(r.origem||'').trim(),
-        responsavel:String(r.responsavel||LISTS.responsavel[0]||'').trim(),visita:normVisita(r.visita),
-        motivo_perda:etapa==='PERDIDO'?(normMotivo(r.motivo_perda)||'Outro'):'',observacao:String(r.observacao||'').trim(),
+        etapa,prioridade:stagePriority(etapa),origem:String(r.origem||'').trim(),
+        responsavel:String(r.responsavel||LISTS.responsavel[0]||ACCESS_USER?.nome||'').trim(),visita:normVisita(r.visita),
+        motivo_perda:'',observacao:String(r.observacao||r.historico_de_atendimento||'').trim(),
         criado_em:existing?.criado_em||r.criado_em||nowISO(),atualizado_em:nowISO()
       };
       if(await upsertLead(payload,{silent:true}))saved++;else failed++;
@@ -1614,7 +1588,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=40');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=41');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1772,14 +1746,14 @@ bindEl('aiBtnPrio','click',()=>aiLeadAction('prio'));
 leadForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const nome=F('nome').value.trim();
-  if(ALL.some(l=>l.id!==editingId&&normEtapa(l.etapa)!=='PERDIDO'&&(l.nome||'').trim().toLowerCase()===nome.toLowerCase())){
+  if(ALL.some(l=>l.id!==editingId&&(l.nome||'').trim().toLowerCase()===nome.toLowerCase())){
     if(!confirm(`Já existe lead ativo com "${nome}". Salvar mesmo assim?`))return;
   }
   if(origSnap&&formSnap()===origSnap){closeDialog(true);return;}
   const prevEtapa=editingId?normEtapa(ALL.find(x=>x.id===editingId)?.etapa||''):null;
   const newEtapa=normEtapa(F('etapa').value);
   if(editingId&&prevEtapa&&prevEtapa!==newEtapa)addHistory(editingId,`${prevEtapa} → ${newEtapa}`);
-  const payload={id:editingId||cid(),ordem:editingId?(ALL.find(x=>x.id===editingId)?.ordem??Date.now()):orderForTop(newEtapa),data_inicio:F('data_inicio').value||todayISO(),proximo_contato:normProx(F('proximo_contato').value),nome,telefone:F('telefone').value.trim(),empreendimento:F('empreendimento').value,etapa:newEtapa,prioridade:F('prioridade').value,origem:F('origem').value,responsavel:F('responsavel').value,visita:normVisita(F('visita').value),motivo_perda:newEtapa==='PERDIDO'?normMotivo(F('motivo_perda').value):'',observacao:F('observacao').value,criado_em:editingId?(ALL.find(x=>x.id===editingId)?.criado_em||nowISO()):nowISO(),atualizado_em:nowISO()};
+  const payload={id:editingId||cid(),ordem:editingId?(ALL.find(x=>x.id===editingId)?.ordem??Date.now()):orderForTop(newEtapa),data_inicio:F('data_inicio').value||todayISO(),proximo_contato:normProx(F('proximo_contato').value),nome,telefone:F('telefone').value.trim(),empreendimento:F('empreendimento').value,etapa:newEtapa,prioridade:stagePriority(newEtapa),origem:F('origem').value,responsavel:F('responsavel').value,visita:normVisita(F('visita').value),motivo_perda:'',observacao:F('observacao').value,criado_em:editingId?(ALL.find(x=>x.id===editingId)?.criado_em||nowISO()):nowISO(),atualizado_em:nowISO()};
   const ok=await upsertLead(payload);
   if(ok){origSnap=formSnap();closeDialog(true);}
 });
@@ -1828,8 +1802,6 @@ document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>
   else renderAdmin(t.dataset.tab);
 }));
 
-// Contadores caixas
-bindEl('boxPerdidos','click',()=>{SHOW_LOST=!SHOW_LOST;render();});
 const btnSalvarAcesso=document.getElementById('btnSalvarAcesso'); if(btnSalvarAcesso) btnSalvarAcesso.addEventListener('click',saveAccessUser);
 
 let voiceRecognition=null;
@@ -2184,13 +2156,13 @@ window.addEventListener('resize',()=>{
 
 
 
-/* ===== LeveCRM v40 — persistência e endurecimento ===== */
+/* ===== LeveCRM v41 — persistência e endurecimento ===== */
 var HISTORY_CACHE={};
 var SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
 var PROPOSALS_CACHE=[];
 
 function clearLeveCrmLocalData(){
-  const keep=new Set(['levecrm_v40_cleaned']);
+  const keep=new Set(['levecrm_v41_cleaned']);
   Object.keys(localStorage).forEach(k=>{if((k.startsWith('crm_')||k.startsWith('levecrm_'))&&!keep.has(k))localStorage.removeItem(k);});
 }
 
@@ -2206,6 +2178,7 @@ async function loadSettings(){
   const rows=await sbFetch(`${SETTINGS_TBL}?select=id,category,name,payload&order=created_at.asc`);
   SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
   (rows||[]).forEach(r=>{
+    if(String(r.name||'').startsWith('__'))return;
     const item={id:r.id,nome:r.name,...(r.payload||{})};
     if(SETTINGS_CACHE[r.category])SETTINGS_CACHE[r.category].push(item);
   });
@@ -2213,6 +2186,52 @@ async function loadSettings(){
   LISTS.empreendimento=SETTINGS_CACHE.empreendimento.map(x=>x.nome);
   LISTS.origem=SETTINGS_CACHE.origem.map(x=>x.nome);
   syncFilterSelects();
+}
+function mergeLeadOptionsIntoLists(){
+  const uniq=items=>[...new Set(items.map(v=>String(v||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  LISTS.responsavel=uniq([...LISTS.responsavel,...ALL.map(l=>l.responsavel),ACCESS_USER?.nome||'']);
+  LISTS.empreendimento=uniq([...LISTS.empreendimento,...ALL.map(l=>l.empreendimento)]);
+  LISTS.origem=uniq([...LISTS.origem,...ALL.map(l=>l.origem)]);
+  syncFilterSelects();
+}
+async function hasInitialImportMarker(){
+  const rows=await sbFetch(`${SETTINGS_TBL}?select=id&category=eq.origem&name=eq.${encodeURIComponent(INITIAL_IMPORT_MARKER)}&limit=1`);
+  return Boolean(rows?.length);
+}
+async function importInitialLeadsIfNeeded(existingRows=[]){
+  if(!ACCESS_USER?.id||!ADMIN_EMAILS.includes(String(ACCESS_USER.email||'').toLowerCase()))return false;
+  if(await hasInitialImportMarker())return false;
+  const response=await fetch(INITIAL_LEADS_URL,{cache:'no-store'});
+  if(!response.ok)throw new Error(`Não consegui abrir a base inicial (${response.status}).`);
+  const source=await response.json();
+  if(!Array.isArray(source?.leads)||source.leads.length!==200)throw new Error('A base inicial não contém exatamente 200 leads.');
+  const sourceIds=new Set(source.leads.map(item=>String(item.id||'')));
+  const unrelated=(existingRows||[]).filter(row=>!sourceIds.has(String(row.id||'')));
+  if(unrelated.length)throw new Error('A conta não está vazia. A importação automática foi bloqueada para não misturar cadastros.');
+  showToast('Importando os 200 leads classificados...',5000);
+  for(let i=0;i<source.leads.length;i+=25){
+    const chunk=source.leads.slice(i,i+25).map(item=>{
+      const clean={...item};
+      delete clean._pontuacao_operacional;delete clean._ordem_geral;
+      clean.access_user_id=ACCESS_USER.id;
+      clean.etapa=normEtapa(clean.etapa);
+      clean.prioridade=stagePriority(clean.etapa);
+      clean.responsavel=clean.responsavel||ACCESS_USER.nome||'';
+      clean.motivo_perda='';
+      clean.data_fechamento=null;
+      return clean;
+    });
+    await sbFetch(`${TBL}?on_conflict=id`,{method:'POST',body:chunk,prefer:'resolution=merge-duplicates,return=minimal'});
+  }
+  const check=await sbFetch(`${TBL}?select=id,etapa`);
+  const imported=(check||[]).filter(row=>sourceIds.has(String(row.id||'')));
+  if(imported.length!==200)throw new Error(`Foram confirmados ${imported.length} de 200 leads. A importação não foi marcada como concluída.`);
+  await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
+    method:'POST',
+    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v41',count:200,imported_at:nowISO()}},
+    prefer:'resolution=merge-duplicates,return=minimal'
+  });
+  return true;
 }
 
 async function loadHistory(){
@@ -2261,19 +2280,29 @@ function leadAttentionScore(l){
 }
 function sortLeads(leads,etapa){
   const e=normEtapa(etapa);
-  return leads.filter(l=>normEtapa(l.etapa)===e).sort((a,b)=>leadAttentionScore(b)-leadAttentionScore(a)||Number(a.ordem||0)-Number(b.ordem||0)||new Date(leadActivityAt(b))-new Date(leadActivityAt(a)));
+  return leads.filter(l=>normEtapa(l.etapa)===e).sort((a,b)=>Number(a.ordem||0)-Number(b.ordem||0)||String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
 }
-function sortMobilePriority(leads){return [...leads].sort((a,b)=>leadAttentionScore(b)-leadAttentionScore(a)||new Date(leadActivityAt(b))-new Date(leadActivityAt(a)));}
+function sortMobilePriority(leads){
+  return [...leads].sort((a,b)=>LISTS.etapa.indexOf(normEtapa(a.etapa))-LISTS.etapa.indexOf(normEtapa(b.etapa))||Number(a.ordem||0)-Number(b.ordem||0)||String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
+}
 
 async function loadAll(){
   try{
     const {data:sessionResult,error:sessionError}=await AUTH_CLIENT.auth.getSession();if(sessionError)throw sessionError;
     if(!sessionResult?.session?.user?.id||!ACCESS_USER?.id){ALL=[];ATTACHES=[];render();lockAccess('Sua sessão expirou.');return;}
     const {error:accessError}=await AUTH_CLIENT.rpc('levecrm_assert_access');if(accessError)throw accessError;
-    const [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
-    ALL=(rows||[]).map(l=>{const legacyClosed=l.prioridade==='Fechado';return {...l,etapa:legacyClosed?'FECHADO / GANHO':normEtapa(l.etapa),prioridade:legacyClosed?'Alta':(LISTS.prioridade.includes(l.prioridade)?l.prioridade:'Baixa'),motivo_perda:normMotivo(l.motivo_perda),visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato)};});
+    let [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
+    const imported=await importInitialLeadsIfNeeded(rows||[]);
+    if(imported){
+      const reload=await AUTH_CLIENT.from(TBL).select('*');
+      if(reload.error)throw reload.error;
+      rows=reload.data||[];
+    }
+    ALL=(rows||[]).map(l=>({...l,etapa:normEtapa(l.etapa),prioridade:stagePriority(l.etapa),motivo_perda:'',visita:normVisita(l.visita),ordem:Number(l.ordem)||Date.now(),proximo_contato:normProx(l.proximo_contato),data_fechamento:null}));
+    mergeLeadOptionsIntoLists();
     await Promise.all([loadAttaches(),loadHistory()]);
     render();setStatus('ok','');
+    if(imported)showToast('200 leads importados e conferidos.',3500);
   }catch(e){
     console.error(e);ALL=[];ATTACHES=[];HISTORY_CACHE={};refreshAttMap();render();
     if(/acesso|expirado|bloqueado/i.test(e?.message||''))lockAccess(e.message);else showToast(`Erro ao carregar: ${e?.message||'falha desconhecida'}`,6000);
@@ -2284,13 +2313,12 @@ async function upsertLead(payload,{silent=false}={}){
   if(!payload.nome?.trim()){alert('Nome é obrigatório.');return false;}
   const previous=ALL.find(x=>x.id===payload.id);
   payload={...payload};
-  payload.etapa=normEtapa(payload.etapa);payload.motivo_perda=normMotivo(payload.motivo_perda);payload.proximo_contato=normProx(payload.proximo_contato);payload.visita=normVisita(payload.visita);
-  if(payload.etapa!=='PERDIDO')payload.motivo_perda='';else{payload.prioridade='Baixa';if(!payload.motivo_perda){alert('Motivo de perda obrigatório.');return false;}}
+  payload.etapa=normEtapa(payload.etapa);payload.prioridade=stagePriority(payload.etapa);payload.motivo_perda='';payload.proximo_contato=normProx(payload.proximo_contato);payload.visita=normVisita(payload.visita);
   payload.access_user_id=ACCESS_USER?.id||payload.access_user_id;
   payload.atualizado_em=nowISO();payload.ordem=Number(payload.ordem)||Date.now();
   const observationChanged=!previous||String(previous.observacao||'')!==String(payload.observacao||'');
   payload.ultima_interacao_em=observationChanged?nowISO():(previous?.ultima_interacao_em||payload.ultima_interacao_em||null);
-  payload.data_fechamento=payload.etapa==='FECHADO / GANHO'?(previous?.data_fechamento||nowISO()):null;
+  payload.data_fechamento=null;
   try{
     let row;
     if(previous){const{id,...body}=payload;const rows=await sbFetch(`${TBL}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body});row=rows?.[0]||payload;ALL[ALL.findIndex(x=>x.id===id)]={...previous,...row};}
@@ -2353,6 +2381,13 @@ async function resetCurrentAccountData(){
   if(!confirm('Isso apagará definitivamente todos os leads, anexos, agenda, propostas, análises e cadastros comerciais desta conta. Continuar?'))return;
   const typed=prompt('Digite ZERAR para confirmar.');if(typed!=='ZERAR')return;
   const {error}=await AUTH_CLIENT.rpc('levecrm_reset_my_data');if(error)return alert(error.message);
+  try{
+    await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
+      method:'POST',
+      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v41',count:0,disabled:true,reset_at:nowISO()}},
+      prefer:'resolution=merge-duplicates,return=minimal'
+    });
+  }catch(markerError){console.warn('Não foi possível gravar o marcador pós-reset.',markerError);}
   clearLeveCrmLocalData();ALL=[];ATTACHES=[];HISTORY_CACHE={};SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};loadAdminData();syncFilterSelects();render();showToast('Sistema zerado.');
 }
 window.resetCurrentAccountData=resetCurrentAccountData;
@@ -2381,4 +2416,4 @@ window.ensurePushSubscription=ensurePushSubscription;
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){agLoad().then(()=>{rescheduleAllNotifs();updateAgendaBadge();});}});
 
 // Limpeza única de vestígios locais das versões anteriores.
-if(localStorage.getItem('levecrm_v40_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v40_cleaned','1');}
+if(localStorage.getItem('levecrm_v41_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v41_cleaned','1');}

@@ -7947,3 +7947,7 @@ button.attach-chip {
   margin-left: 5px;
   opacity: .75
 }
+/* LeveCRM v41 — quatro blocos comerciais */
+.board{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+@media (max-width:1280px){.board{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:760px){.board{grid-template-columns:1fr!important}}
