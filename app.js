@@ -1,4 +1,4 @@
-/* LeveCRM v42 — base persistente, segurança RLS, histórico, propostas e correções gerais.
+/* LeveCRM v43 — base persistente, segurança RLS, histórico, propostas e correções gerais.
    Pacote revisado e validado em 23/06/2026. */
 
 /* ===== main ===== */
@@ -41,8 +41,8 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=42';
-const INITIAL_IMPORT_MARKER='__LEADS_V41_IMPORTED__';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=43';
+const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
    LISTAS
@@ -1588,7 +1588,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=42');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=43');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -2156,13 +2156,13 @@ window.addEventListener('resize',()=>{
 
 
 
-/* ===== LeveCRM v42 — persistência e endurecimento ===== */
+/* ===== LeveCRM v43 — persistência e endurecimento ===== */
 var HISTORY_CACHE={};
 var SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
 var PROPOSALS_CACHE=[];
 
 function clearLeveCrmLocalData(){
-  const keep=new Set(['levecrm_v42_cleaned','levecrm_v42_cache_reset_done']);
+  const keep=new Set(['levecrm_v43_cleaned','levecrm_v43_cache_reset_done']);
   Object.keys(localStorage).forEach(k=>{if((k.startsWith('crm_')||k.startsWith('levecrm_'))&&!keep.has(k))localStorage.removeItem(k);});
 }
 
@@ -2194,23 +2194,41 @@ function mergeLeadOptionsIntoLists(){
   LISTS.origem=uniq([...LISTS.origem,...ALL.map(l=>l.origem)]);
   syncFilterSelects();
 }
-async function hasInitialImportMarker(){
-  const rows=await sbFetch(`${SETTINGS_TBL}?select=id&category=eq.origem&name=eq.${encodeURIComponent(INITIAL_IMPORT_MARKER)}&limit=1`);
-  return Boolean(rows?.length);
+async function getInitialImportMarker(){
+  const rows=await sbFetch(`${SETTINGS_TBL}?select=id,payload&category=eq.origem&name=eq.${encodeURIComponent(INITIAL_IMPORT_MARKER)}&limit=1`);
+  return rows?.[0]||null;
 }
 async function importInitialLeadsIfNeeded(existingRows=[]){
   if(!ACCESS_USER?.id||!ADMIN_EMAILS.includes(String(ACCESS_USER.email||'').toLowerCase()))return false;
-  if(await hasInitialImportMarker())return false;
   const response=await fetch(INITIAL_LEADS_URL,{cache:'no-store'});
   if(!response.ok)throw new Error(`Não consegui abrir a base inicial (${response.status}).`);
   const source=await response.json();
   if(!Array.isArray(source?.leads)||source.leads.length!==200)throw new Error('A base inicial não contém exatamente 200 leads.');
+
+  const expectedCounts={'Prioritário':7,'Qualificação':29,'Retomada':22,'Sem foco':142};
+  const sourceCounts=source.leads.reduce((acc,item)=>{const etapa=normEtapa(item.etapa);acc[etapa]=(acc[etapa]||0)+1;return acc;},{});
+  for(const [etapa,total] of Object.entries(expectedCounts)){
+    if(Number(sourceCounts[etapa]||0)!==total)throw new Error(`Base inicial inválida em ${etapa}: ${sourceCounts[etapa]||0} de ${total}.`);
+  }
+
   const sourceIds=new Set(source.leads.map(item=>String(item.id||'')));
+  const currentSourceRows=(existingRows||[]).filter(row=>sourceIds.has(String(row.id||'')));
   const unrelated=(existingRows||[]).filter(row=>!sourceIds.has(String(row.id||'')));
-  if(unrelated.length)throw new Error('A conta não está vazia. A importação automática foi bloqueada para não misturar cadastros.');
-  showToast('Importando os 200 leads classificados...',5000);
-  for(let i=0;i<source.leads.length;i+=25){
-    const chunk=source.leads.slice(i,i+25).map(item=>{
+  const marker=await getInitialImportMarker();
+
+  // Só considera concluído quando os 200 registros realmente existem. Um marcador antigo,
+  // inclusive de reset, nunca pode esconder uma base vazia.
+  if(currentSourceRows.length===200){
+    const currentCounts=currentSourceRows.reduce((acc,item)=>{const etapa=normEtapa(item.etapa);acc[etapa]=(acc[etapa]||0)+1;return acc;},{});
+    const complete=Object.entries(expectedCounts).every(([etapa,total])=>Number(currentCounts[etapa]||0)===total);
+    if(complete)return false;
+  }
+  if(marker?.payload?.disabled===true)return false;
+  if(unrelated.length)throw new Error('A conta contém cadastros diferentes da planilha. A importação foi bloqueada para não misturar dados.');
+
+  showToast(`Importando ${200-currentSourceRows.length} leads restantes...`,6000);
+  for(let i=0;i<source.leads.length;i+=20){
+    const chunk=source.leads.slice(i,i+20).map(item=>{
       const clean={...item};
       delete clean._pontuacao_operacional;delete clean._ordem_geral;
       clean.access_user_id=ACCESS_USER.id;
@@ -2221,14 +2239,20 @@ async function importInitialLeadsIfNeeded(existingRows=[]){
       clean.data_fechamento=null;
       return clean;
     });
-    await sbFetch(`${TBL}?on_conflict=id`,{method:'POST',body:chunk,prefer:'resolution=merge-duplicates,return=minimal'});
+    const {error}=await AUTH_CLIENT.from(TBL).upsert(chunk,{onConflict:'id',ignoreDuplicates:false});
+    if(error)throw new Error(`Falha ao importar leads ${i+1} a ${Math.min(i+20,200)}: ${error.message}`);
   }
-  const check=await sbFetch(`${TBL}?select=id,etapa`);
+
+  const {data:check,error:checkError}=await AUTH_CLIENT.from(TBL).select('id,etapa');
+  if(checkError)throw checkError;
   const imported=(check||[]).filter(row=>sourceIds.has(String(row.id||'')));
-  if(imported.length!==200)throw new Error(`Foram confirmados ${imported.length} de 200 leads. A importação não foi marcada como concluída.`);
+  const importedCounts=imported.reduce((acc,item)=>{const etapa=normEtapa(item.etapa);acc[etapa]=(acc[etapa]||0)+1;return acc;},{});
+  const valid=imported.length===200&&Object.entries(expectedCounts).every(([etapa,total])=>Number(importedCounts[etapa]||0)===total);
+  if(!valid)throw new Error(`Importação incompleta: ${imported.length}/200. Prioritário ${importedCounts['Prioritário']||0}/7, Qualificação ${importedCounts['Qualificação']||0}/29, Retomada ${importedCounts['Retomada']||0}/22, Sem foco ${importedCounts['Sem foco']||0}/142.`);
+
   await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
     method:'POST',
-    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v42',count:200,imported_at:nowISO()}},
+    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v43',count:200,counts:expectedCounts,imported_at:nowISO()}},
     prefer:'resolution=merge-duplicates,return=minimal'
   });
   return true;
@@ -2384,7 +2408,7 @@ async function resetCurrentAccountData(){
   try{
     await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
       method:'POST',
-      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v42',count:0,disabled:true,reset_at:nowISO()}},
+      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v43',count:0,disabled:true,reset_at:nowISO()}},
       prefer:'resolution=merge-duplicates,return=minimal'
     });
   }catch(markerError){console.warn('Não foi possível gravar o marcador pós-reset.',markerError);}
@@ -2416,4 +2440,4 @@ window.ensurePushSubscription=ensurePushSubscription;
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){agLoad().then(()=>{rescheduleAllNotifs();updateAgendaBadge();});}});
 
 // Limpeza única de vestígios locais das versões anteriores.
-if(localStorage.getItem('levecrm_v42_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v42_cleaned','1');}
+if(localStorage.getItem('levecrm_v43_cleaned')!=='1'){clearLeveCrmLocalData();localStorage.setItem('levecrm_v43_cleaned','1');}
