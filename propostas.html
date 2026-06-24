@@ -3,7 +3,7 @@
 <head>
 <script>
 (function(){
-  const KEY='levecrm_v45_cache_reset_done';
+  const KEY='levecrm_v47_cache_refresh_done';
   if(localStorage.getItem(KEY)==='1') return;
   localStorage.setItem(KEY,'1');
   Promise.resolve().then(async()=>{
@@ -18,7 +18,7 @@
       }
     }catch(e){console.warn('Atualização de cache:',e);}
     const u=new URL(location.href);
-    u.searchParams.set('versao','45');
+    u.searchParams.set('versao','47');
     u.searchParams.set('_',Date.now());
     location.replace(u.toString());
   });

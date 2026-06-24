@@ -1,29 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script>
-(function(){
-  const KEY='levecrm_v45_cache_reset_done';
-  if(localStorage.getItem(KEY)==='1') return;
-  localStorage.setItem(KEY,'1');
-  Promise.resolve().then(async()=>{
-    try{
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r=>r.unregister()));
-      }
-      if('caches' in window){
-        const names=await caches.keys();
-        await Promise.all(names.map(n=>caches.delete(n)));
-      }
-    }catch(e){console.warn('Atualização de cache:',e);}
-    const u=new URL(location.href);
-    u.searchParams.set('versao','45');
-    u.searchParams.set('_',Date.now());
-    location.replace(u.toString());
-  });
-})();
-</script>
+
 
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -34,7 +12,7 @@
 <meta name="theme-color" content="#0C1D24"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="45"/>
+<meta name="application-version" content="47"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -89,7 +67,7 @@
 
 
 
-<link rel="stylesheet" href="./styles.css?v=45"/>
+<link rel="stylesheet" href="./styles.css?v=47"/>
 </head>
 <body class="t-light has-sidebar">
 
@@ -99,7 +77,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v45</span></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">VERSÃO 47</span></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -154,6 +132,7 @@
         <div class="logo-text">
           <div class="logo-name">leve<span class="crm">crm</span></div>
           <div class="logo-tag">CORRETORES DE IMÓVEIS</div>
+          <span class="app-version-badge">VERSÃO 47</span>
         </div>
       </div>
 
@@ -822,7 +801,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./app.js?v=44"></script>
+<script src="./app.js?v=47"></script>
 
 </body>
 </html>

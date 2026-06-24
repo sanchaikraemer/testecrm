@@ -8033,3 +8033,288 @@ body.t-dark a { color:#FF8A7E; }
   header { background:color-mix(in srgb,var(--bg2) 94%,transparent)!important; backdrop-filter:blur(16px); }
   #mobileActions { background:var(--bg2)!important; }
 }
+
+/* =========================================================
+   LEVECRM V46 — CORREÇÃO FINAL DE IDENTIDADE E TEMAS
+   A estrutura e os dados permanecem intactos; somente a camada visual.
+   ========================================================= */
+body.t-light{
+  --bg:#F4F7F8!important;
+  --bg2:#FFFFFF!important;
+  --bg3:#E6EEF0!important;
+  --col:#FFFFFF!important;
+  --col2:#F4F7F8!important;
+  --text:#0C1D24!important;
+  --muted:#607780!important;
+  --line:#D4E0E4!important;
+  --card:#FFFFFF!important;
+  --card2:#F4F7F8!important;
+  --nm:#0C1D24!important;
+  --emp:#607780!important;
+  --accent:#FF6B5C!important;
+  --accent2:#132A33!important;
+  background:#F4F7F8!important;
+  color:#0C1D24!important;
+}
+body.t-dark{
+  --bg:#0C1D24!important;
+  --bg2:#132A33!important;
+  --bg3:#173641!important;
+  --col:#132A33!important;
+  --col2:#173641!important;
+  --text:#E6EEF0!important;
+  --muted:#8FA9B0!important;
+  --line:#21424E!important;
+  --card:#132A33!important;
+  --card2:#173641!important;
+  --nm:#E6EEF0!important;
+  --emp:#8FA9B0!important;
+  --accent:#FF6B5C!important;
+  --accent2:#E6EEF0!important;
+  background:#0C1D24!important;
+  color:#E6EEF0!important;
+}
+body.t-light #mainWrap,body.t-light .view.active{background:#F4F7F8!important}
+body.t-dark #mainWrap,body.t-dark .view.active{background:#0C1D24!important}
+body.t-light header{background:#FFFFFF!important;border-color:#D4E0E4!important}
+body.t-dark header{background:#0C1D24!important;border-color:#21424E!important}
+#sideNav{background:linear-gradient(180deg,#0C1D24 0%,#10262F 56%,#132A33 100%)!important;border-color:#21424E!important}
+#sideNav .nav-tab.active,#sideNav .side-link.active{background:linear-gradient(90deg,#FF6B5C,#F05B4E)!important;color:#fff!important;box-shadow:0 10px 24px rgba(255,107,92,.20)!important}
+#sideNav .nav-tab:hover,#sideNav .side-link:hover{background:rgba(230,238,240,.07)!important}
+body.t-light .col,body.t-light .kanban-col,body.t-light .panel,body.t-light .dashboard-card,body.t-light .settings-card{background:#FFFFFF!important;border-color:#D4E0E4!important}
+body.t-dark .col,body.t-dark .kanban-col,body.t-dark .panel,body.t-dark .dashboard-card,body.t-dark .settings-card{background:#132A33!important;border-color:#21424E!important;color:#E6EEF0!important}
+body.t-light .col-head{background:#FFFFFF!important;border-color:#D4E0E4!important;color:#0C1D24!important}
+body.t-dark .col-head{background:#173641!important;border-color:#21424E!important;color:#E6EEF0!important}
+body.t-dark .col-head .cname,body.t-dark .col-head .cnt{color:#E6EEF0!important}
+body.t-light .dropzone{background:#F8FAFA!important}
+body.t-dark .dropzone{background:#10262F!important}
+body.t-light .card{background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important}
+body.t-dark .card{background:#173641!important;color:#E6EEF0!important;border-color:#2B5260!important;box-shadow:0 8px 22px rgba(0,0,0,.20)!important}
+body.t-dark .card-nm,body.t-dark .sb-nm,body.t-dark .card-prio{color:#E6EEF0!important}
+body.t-dark .card-emp,body.t-dark .sb-emp,body.t-dark .card-meta{color:#8FA9B0!important}
+body.t-light .btn,body.t-light .cbox,body.t-light select,body.t-light input,body.t-light .search-wrap,body.t-light .pill{background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important}
+body.t-dark .btn,body.t-dark .cbox,body.t-dark select,body.t-dark input,body.t-dark .search-wrap,body.t-dark .pill,body.t-dark .more-menu,body.t-dark .theme-menu{background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
+#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action,button[type="submit"]{background:linear-gradient(180deg,#FF7B6F,#FF6B5C)!important;color:#fff!important;border-color:#E85A4D!important;box-shadow:0 8px 20px rgba(255,107,92,.20)!important}
+#btnNew:hover,#btnNewMobile:hover,.btn-accent:hover,.btn-primary:hover{filter:brightness(.97)!important}
+.cbox .n,.side-brand .crm,.logo-name .crm{color:#FF6B5C!important}
+.tabs button.active,.tab.active,[aria-selected="true"]{color:#FF6B5C!important;border-color:#FF6B5C!important}
+body.t-light .chip,body.t-light .tag{border-color:#D4E0E4!important}
+body.t-dark .chip,body.t-dark .tag{background:#173641!important;color:#E6EEF0!important;border-color:#315762!important}
+body.t-light .modal-card,body.t-light .drawer,body.t-light .mf-sheet{background:#FFFFFF!important;color:#0C1D24!important}
+body.t-dark .modal-card,body.t-dark .drawer,body.t-dark .mf-sheet,body.t-dark .dlg-head,body.t-dark .dlg-body,body.t-dark .dlg-foot{background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
+body.t-light #mobileActions{background:#FFFFFF!important;border-color:#D4E0E4!important}
+body.t-dark #mobileActions{background:#132A33!important;border-color:#21424E!important}
+body.t-dark ::placeholder{color:#8FA9B0!important}
+
+/* =========================================================
+   LEVECRM V47 — APLICAÇÃO CORRETA DA IDENTIDADE
+   Base estrutural: petróleo. Superfícies: branco/petróleo claro.
+   Coral somente em ações, seleção e atenção.
+   ========================================================= */
+
+/* Fundos e superfícies */
+body.t-light{
+  --bg:#F7F9F9!important;
+  --bg2:#FFFFFF!important;
+  --bg3:#F0F4F5!important;
+  --col:#FFFFFF!important;
+  --col2:#F4F7F8!important;
+  --text:#0C1D24!important;
+  --muted:#6E858D!important;
+  --line:#D9E3E6!important;
+  --card:#FFFFFF!important;
+  --card2:#F4F7F8!important;
+  background:#F7F9F9!important;
+  color:#0C1D24!important;
+}
+body.t-dark{
+  --bg:#0C1D24!important;
+  --bg2:#10262F!important;
+  --bg3:#132A33!important;
+  --col:#132A33!important;
+  --col2:#17343E!important;
+  --text:#E6EEF0!important;
+  --muted:#8FA9B0!important;
+  --line:#21424E!important;
+  --card:#132A33!important;
+  --card2:#17343E!important;
+  background:#0C1D24!important;
+  color:#E6EEF0!important;
+}
+body.t-light #mainWrap,
+body.t-light .view.active,
+body.t-light .board{background:#F7F9F9!important}
+body.t-dark #mainWrap,
+body.t-dark .view.active,
+body.t-dark .board{background:#0C1D24!important}
+body.t-light header{background:#FFFFFF!important;border-color:#D9E3E6!important}
+body.t-dark header{background:#10262F!important;border-color:#21424E!important}
+
+/* Colunas discretas, sem blocos coloridos dominantes */
+body.t-light .col,
+body.t-light .kanban-col,
+body.t-light .column{
+  background:#F1F4F5!important;
+  border:1px solid #D9E3E6!important;
+  box-shadow:none!important;
+}
+body.t-dark .col,
+body.t-dark .kanban-col,
+body.t-dark .column{
+  background:#10262F!important;
+  border:1px solid #21424E!important;
+  box-shadow:none!important;
+}
+body.t-light .col-head{background:#F1F4F5!important;color:#0C1D24!important;border-color:#D9E3E6!important}
+body.t-dark .col-head{background:#10262F!important;color:#E6EEF0!important;border-color:#21424E!important}
+
+/* Cards: superfícies neutras; prioridade vira detalhe, não fundo */
+.card,
+.card.p-top,
+.card.p-high,
+.card.p-med,
+.card.p-low,
+.card.p-done,
+.card.p-scheduled{
+  background:#FFFFFF!important;
+  color:#0C1D24!important;
+  border:1px solid #D2DEE2!important;
+  box-shadow:0 4px 12px rgba(12,29,36,.07)!important;
+}
+body.t-dark .card,
+body.t-dark .card.p-top,
+body.t-dark .card.p-high,
+body.t-dark .card.p-med,
+body.t-dark .card.p-low,
+body.t-dark .card.p-done,
+body.t-dark .card.p-scheduled{
+  background:#17343E!important;
+  color:#E6EEF0!important;
+  border:1px solid #2B505C!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.16)!important;
+}
+.card::before{width:4px!important;background:#8FA9B0!important}
+.card.p-top::before,.card.p-high::before{background:#FF6B5C!important}
+.card.p-med::before{background:#8FA9B0!important}
+.card.p-low::before{background:#B7C7CC!important}
+.card.p-done::before{background:#5FA786!important}
+.card.p-scheduled::before{background:#D89A46!important}
+
+/* Tipografia dentro dos cards */
+.card-nm,.sb-nm{color:#0C1D24!important;font-weight:800!important}
+.card-emp,.sb-emp,.card-meta{color:#607780!important}
+body.t-dark .card-nm,body.t-dark .sb-nm{color:#E6EEF0!important}
+body.t-dark .card-emp,body.t-dark .sb-emp,body.t-dark .card-meta{color:#8FA9B0!important}
+
+/* Badges de prioridade: discretos e coerentes */
+.card-prio,.prio-top,.prio-high,.prio-med,.prio-low,.prio-done{
+  background:#F0F4F5!important;
+  color:#21424E!important;
+  border:1px solid #CBD8DC!important;
+  box-shadow:none!important;
+}
+.prio-top,.prio-high{
+  background:#FFF0ED!important;
+  color:#B53F34!important;
+  border-color:#F2A398!important;
+}
+.prio-med{background:#EEF3F4!important;color:#355763!important;border-color:#B7C8CD!important}
+.prio-low{background:#F4F6F7!important;color:#6B7F86!important;border-color:#D6E0E3!important}
+.prio-done{background:#EDF6F1!important;color:#34775C!important;border-color:#AFCFBE!important}
+body.t-dark .card-prio,
+body.t-dark .prio-top,
+body.t-dark .prio-high,
+body.t-dark .prio-med,
+body.t-dark .prio-low,
+body.t-dark .prio-done{
+  background:#203F49!important;
+  color:#DDE8EB!important;
+  border-color:#365D68!important;
+}
+body.t-dark .prio-top,body.t-dark .prio-high{
+  background:#4A2A29!important;
+  color:#FFD0CA!important;
+  border-color:#8C4A43!important;
+}
+
+/* Ações e seleção: coral. Nunca azul vivo. */
+#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action,button[type="submit"],
+#sideNav .nav-tab.active,#sideNav .side-link.active,.nav-tab.active,
+.tabs button.active,.tab.active,[aria-selected="true"]{
+  background:#FF6B5C!important;
+  color:#FFFFFF!important;
+  border-color:#E85A4D!important;
+  box-shadow:0 7px 18px rgba(255,107,92,.18)!important;
+}
+#btnNew:hover,#btnNewMobile:hover,.btn-accent:hover,.btn-primary:hover{background:#F15D50!important;filter:none!important}
+
+/* Contadores e chips sem arco-íris visual */
+.cbox,.pill,.chip,.tag{
+  box-shadow:none!important;
+}
+body.t-light .cbox,body.t-light .pill,body.t-light .chip,body.t-light .tag{
+  background:#FFFFFF!important;
+  color:#21424E!important;
+  border-color:#D4E0E4!important;
+}
+body.t-dark .cbox,body.t-dark .pill,body.t-dark .chip,body.t-dark .tag{
+  background:#17343E!important;
+  color:#DDE8EB!important;
+  border-color:#315762!important;
+}
+.cbox .n{color:#FF6B5C!important}
+
+/* Campo, filtros e botões secundários */
+body.t-light .btn:not(.btn-accent):not(#btnNew):not(#btnNewMobile),
+body.t-light select,body.t-light input,body.t-light .search-wrap{
+  background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important;
+}
+body.t-dark .btn:not(.btn-accent):not(#btnNew):not(#btnNewMobile),
+body.t-dark select,body.t-dark input,body.t-dark .search-wrap{
+  background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important;
+}
+
+/* WhatsApp permanece verde por reconhecimento funcional */
+.btn-wa,.wa-btn,[data-action="whatsapp"]{background:#25D366!important;color:#fff!important;border-color:#1EAF54!important}
+
+/* Sidebar é base principal da identidade */
+#sideNav{background:#0C1D24!important;border-right:1px solid #21424E!important}
+#sideNav .side-link,#sideNav .nav-tab{color:#E6EEF0!important}
+#sideNav .side-link:hover,#sideNav .nav-tab:hover{background:#132A33!important}
+
+
+/* LeveCRM v47.1 — versão visível e inequívoca */
+#sideNav .side-version{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  margin-top:6px!important;
+  padding:4px 8px!important;
+  border-radius:999px!important;
+  background:#FF6B5C!important;
+  color:#FFFFFF!important;
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  box-shadow:0 4px 12px rgba(255,107,92,.28)!important;
+  opacity:1!important;
+}
+.app-version-badge{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  margin-top:5px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#FF6B5C;
+  color:#fff;
+  font-size:10px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.08em;
+  box-shadow:0 4px 12px rgba(255,107,92,.22);
+}
+body.sidebar-collapsed #sideNav .side-version{display:none!important}

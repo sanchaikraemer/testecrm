@@ -14,7 +14,7 @@ let editingId = null;
 let origSnap = null;
 let SELECTED_LEAD_ID = null;
 const NOTIFICATION_TIMERS = new Map();
-const ALL_THEMES = ['t-light','t-dark'];
+const ALL_THEMES = ['t-light','t-dark','t-navy','t-direciona'];
 const dlg = document.getElementById('dlg');
 const leadForm = document.getElementById('leadForm');
 let aiImgB64 = null;
@@ -41,7 +41,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=44';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=46';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -1530,7 +1530,7 @@ async function importCSV(text){
   alert(`Importação concluída.\nSalvos: ${saved}\nFalhas: ${failed}`);
 }
 function applyTheme(t){
-  const theme=ALL_THEMES.includes(t)?t:'t-light';
+  const theme=t==='t-dark'?'t-dark':'t-light';
   document.body.classList.remove(...ALL_THEMES);
   document.body.classList.add(theme);
   document.querySelectorAll('.theme-opt').forEach(o=>o.classList.toggle('active',o.dataset.theme===theme));
@@ -1595,7 +1595,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=45');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=46');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
