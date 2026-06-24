@@ -7952,484 +7952,161 @@ button.attach-chip {
 @media (max-width:1280px){.board{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media (max-width:760px){.board{grid-template-columns:1fr!important}}
 
-/* =========================================================
-   LEVECRM V45 — IDENTIDADE VISUAL PETRÓLEO + CORAL
-   ========================================================= */
-:root,
-body.t-light {
-  --bg: #E6EEF0;
-  --bg2: #FFFFFF;
-  --bg3: #F4F7F8;
-  --col: #FFFFFF;
-  --col2: #F4F7F8;
-  --text: #0C1D24;
-  --muted: #627A83;
-  --line: #D5E1E5;
-  --card: #FFFFFF;
-  --card2: #F4F7F8;
-  --nm: #0C1D24;
-  --emp: #58727C;
-  --accent: #FF6B5C;
-  --accent2: #132A33;
-  --gold: #FF6B5C;
-  --danger: #D94A3C;
-  --ok: #2F9B70;
-  --warn: #D79B45;
-}
+
+/* ==== v49 dark theme refinement ==== */
 body.t-dark {
-  --bg: #0C1D24;
-  --bg2: #10262F;
-  --bg3: #132A33;
-  --col: #132A33;
-  --col2: #183640;
-  --text: #E6EEF0;
-  --muted: #8FA9B0;
-  --line: #21424E;
-  --card: #E6EEF0;
-  --card2: #D8E4E8;
-  --nm: #132A33;
-  --emp: #53717D;
-  --accent: #FF6B5C;
-  --accent2: #E6EEF0;
-  --gold: #FF6B5C;
-  --danger: #FF7B6E;
-  --ok: #56B88E;
-  --warn: #E2AF5F;
+  --bg: #0C1D24!important;
+  --bg2: #10262E!important;
+  --bg3: #132A33!important;
+  --col: #132A33!important;
+  --col2: #16313B!important;
+  --text: #E6EEF0!important;
+  --muted: #8FA9B0!important;
+  --line: #21424E!important;
+  --card: #173541!important;
+  --card2: #173541!important;
+  --nm: #F5FAFB!important;
+  --emp: #A7BDC4!important;
+  --accent: #FF6B5C!important;
+  --accent2: #E65A4D!important;
 }
-body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-h1,h2,h3,.stat-val,.logo-name,.side-brand strong,.view-title,.modal-title { font-family: Sora, Inter, sans-serif; }
-body.t-light { background: linear-gradient(135deg,#EEF4F5 0%,#E6EEF0 65%,#DDE8EB 100%); }
-body.t-dark { background: linear-gradient(135deg,#09181E 0%,#0C1D24 55%,#132A33 100%); }
-header { box-shadow: 0 8px 30px rgba(12,29,36,.08); }
-#sideNav { background: linear-gradient(180deg,#0C1D24 0%,#10262F 55%,#132A33 100%) !important; border-right:1px solid #21424E !important; }
-.side-logo img,.logo-mark { border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,.2) !important; }
-.side-brand strong,.side-brand small,.side-version,#sideNav .side-section-title,#sideNav .side-link,#sideNav .nav-tab { color:#E6EEF0; }
-.side-brand .crm,.logo-name .crm { color:#FF6B5C !important; }
-.side-account-card { background:rgba(255,255,255,.06)!important; border:1px solid rgba(230,238,240,.09)!important; }
-.nav-tab.active,#sideNav .nav-tab.active { background:linear-gradient(90deg,#FF6B5C,#F05A4C)!important; color:#fff!important; box-shadow:0 10px 24px rgba(255,107,92,.22)!important; }
-.nav-tab:hover,#sideNav .side-link:hover { background:rgba(255,255,255,.07)!important; }
-.btn-accent,#btnNew,#btnNewMobile,.btn-primary,.primary-action { background:linear-gradient(180deg,#FF7A6D,#FF6B5C)!important; border-color:#E75849!important; color:white!important; box-shadow:0 8px 20px rgba(255,107,92,.22)!important; }
-.btn-accent:hover,#btnNew:hover,#btnNewMobile:hover { filter:brightness(.97); transform:translateY(-1px); }
-.btn,.cbox,select,input,.search-wrap,.more-menu,.theme-menu { border-color:var(--line)!important; }
-body.t-light .btn,body.t-light select,body.t-light input,body.t-light .search-wrap { background:#fff!important; color:#0C1D24!important; }
-body.t-dark .btn,body.t-dark select,body.t-dark input,body.t-dark .search-wrap { background:#132A33!important; color:#E6EEF0!important; }
-.cbox { border-radius:999px!important; }
-.cbox .n { color:#FF6B5C!important; }
-.kanban-col,.column,.panel,.modal-card,.dashboard-card,.settings-card { border-color:var(--line)!important; box-shadow:0 10px 30px rgba(12,29,36,.06); }
-body.t-light .kanban-col,body.t-light .column,body.t-light .panel { background:rgba(255,255,255,.78)!important; }
-body.t-dark .kanban-col,body.t-dark .column,body.t-dark .panel { background:rgba(19,42,51,.78)!important; }
-.card { border-radius:14px!important; border-color:#C8D7DC!important; box-shadow:0 6px 18px rgba(12,29,36,.08)!important; }
-.card.p-top { background:#FFF0ED!important; border-color:#FF6B5C!important; }
-.card.p-high { background:#FFF5F2!important; border-color:#F2A093!important; }
-body.t-dark .card.p-top,body.t-dark .card.p-high { background:#18323B!important; color:#E6EEF0!important; }
-.chip-dt-blue,.tag-blue,.badge-blue { background:#EDF3F5!important; color:#21424E!important; border-color:#B9CBD1!important; }
-body.t-dark .chip-dt-blue,body.t-dark .tag-blue,body.t-dark .badge-blue { background:#17343E!important; color:#DDE8EB!important; border-color:#315762!important; }
-.tabs button.active,.tab.active,[aria-selected="true"] { color:#FF6B5C!important; border-color:#FF6B5C!important; }
-a { color:#D94A3C; }
-body.t-dark a { color:#FF8A7E; }
-.user-pill,.pill { border-color:var(--line)!important; }
-#mobileActions .btn:first-child { background:#FF6B5C!important;color:#fff!important;border-color:#E75849!important; }
-@media (max-width: 640px){
-  header { background:color-mix(in srgb,var(--bg2) 94%,transparent)!important; backdrop-filter:blur(16px); }
-  #mobileActions { background:var(--bg2)!important; }
-}
-
-/* =========================================================
-   LEVECRM V46 — CORREÇÃO FINAL DE IDENTIDADE E TEMAS
-   A estrutura e os dados permanecem intactos; somente a camada visual.
-   ========================================================= */
-body.t-light{
-  --bg:#F4F7F8!important;
-  --bg2:#FFFFFF!important;
-  --bg3:#E6EEF0!important;
-  --col:#FFFFFF!important;
-  --col2:#F4F7F8!important;
-  --text:#0C1D24!important;
-  --muted:#607780!important;
-  --line:#D4E0E4!important;
-  --card:#FFFFFF!important;
-  --card2:#F4F7F8!important;
-  --nm:#0C1D24!important;
-  --emp:#607780!important;
-  --accent:#FF6B5C!important;
-  --accent2:#132A33!important;
-  background:#F4F7F8!important;
-  color:#0C1D24!important;
-}
-body.t-dark{
-  --bg:#0C1D24!important;
-  --bg2:#132A33!important;
-  --bg3:#173641!important;
-  --col:#132A33!important;
-  --col2:#173641!important;
-  --text:#E6EEF0!important;
-  --muted:#8FA9B0!important;
-  --line:#21424E!important;
-  --card:#132A33!important;
-  --card2:#173641!important;
-  --nm:#E6EEF0!important;
-  --emp:#8FA9B0!important;
-  --accent:#FF6B5C!important;
-  --accent2:#E6EEF0!important;
-  background:#0C1D24!important;
-  color:#E6EEF0!important;
-}
-body.t-light #mainWrap,body.t-light .view.active{background:#F4F7F8!important}
-body.t-dark #mainWrap,body.t-dark .view.active{background:#0C1D24!important}
-body.t-light header{background:#FFFFFF!important;border-color:#D4E0E4!important}
-body.t-dark header{background:#0C1D24!important;border-color:#21424E!important}
-#sideNav{background:linear-gradient(180deg,#0C1D24 0%,#10262F 56%,#132A33 100%)!important;border-color:#21424E!important}
-#sideNav .nav-tab.active,#sideNav .side-link.active{background:linear-gradient(90deg,#FF6B5C,#F05B4E)!important;color:#fff!important;box-shadow:0 10px 24px rgba(255,107,92,.20)!important}
-#sideNav .nav-tab:hover,#sideNav .side-link:hover{background:rgba(230,238,240,.07)!important}
-body.t-light .col,body.t-light .kanban-col,body.t-light .panel,body.t-light .dashboard-card,body.t-light .settings-card{background:#FFFFFF!important;border-color:#D4E0E4!important}
-body.t-dark .col,body.t-dark .kanban-col,body.t-dark .panel,body.t-dark .dashboard-card,body.t-dark .settings-card{background:#132A33!important;border-color:#21424E!important;color:#E6EEF0!important}
-body.t-light .col-head{background:#FFFFFF!important;border-color:#D4E0E4!important;color:#0C1D24!important}
-body.t-dark .col-head{background:#173641!important;border-color:#21424E!important;color:#E6EEF0!important}
-body.t-dark .col-head .cname,body.t-dark .col-head .cnt{color:#E6EEF0!important}
-body.t-light .dropzone{background:#F8FAFA!important}
-body.t-dark .dropzone{background:#10262F!important}
-body.t-light .card{background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important}
-body.t-dark .card{background:#173641!important;color:#E6EEF0!important;border-color:#2B5260!important;box-shadow:0 8px 22px rgba(0,0,0,.20)!important}
-body.t-dark .card-nm,body.t-dark .sb-nm,body.t-dark .card-prio{color:#E6EEF0!important}
-body.t-dark .card-emp,body.t-dark .sb-emp,body.t-dark .card-meta{color:#8FA9B0!important}
-body.t-light .btn,body.t-light .cbox,body.t-light select,body.t-light input,body.t-light .search-wrap,body.t-light .pill{background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important}
-body.t-dark .btn,body.t-dark .cbox,body.t-dark select,body.t-dark input,body.t-dark .search-wrap,body.t-dark .pill,body.t-dark .more-menu,body.t-dark .theme-menu{background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
-#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action,button[type="submit"]{background:linear-gradient(180deg,#FF7B6F,#FF6B5C)!important;color:#fff!important;border-color:#E85A4D!important;box-shadow:0 8px 20px rgba(255,107,92,.20)!important}
-#btnNew:hover,#btnNewMobile:hover,.btn-accent:hover,.btn-primary:hover{filter:brightness(.97)!important}
-.cbox .n,.side-brand .crm,.logo-name .crm{color:#FF6B5C!important}
-.tabs button.active,.tab.active,[aria-selected="true"]{color:#FF6B5C!important;border-color:#FF6B5C!important}
-body.t-light .chip,body.t-light .tag{border-color:#D4E0E4!important}
-body.t-dark .chip,body.t-dark .tag{background:#173641!important;color:#E6EEF0!important;border-color:#315762!important}
-body.t-light .modal-card,body.t-light .drawer,body.t-light .mf-sheet{background:#FFFFFF!important;color:#0C1D24!important}
-body.t-dark .modal-card,body.t-dark .drawer,body.t-dark .mf-sheet,body.t-dark .dlg-head,body.t-dark .dlg-body,body.t-dark .dlg-foot{background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
-body.t-light #mobileActions{background:#FFFFFF!important;border-color:#D4E0E4!important}
-body.t-dark #mobileActions{background:#132A33!important;border-color:#21424E!important}
-body.t-dark ::placeholder{color:#8FA9B0!important}
-
-/* =========================================================
-   LEVECRM V48 — APLICAÇÃO CORRETA DA IDENTIDADE
-   Base estrutural: petróleo. Superfícies: branco/petróleo claro.
-   Coral somente em ações, seleção e atenção.
-   ========================================================= */
-
-/* Fundos e superfícies */
-body.t-light{
-  --bg:#F7F9F9!important;
-  --bg2:#FFFFFF!important;
-  --bg3:#F0F4F5!important;
-  --col:#FFFFFF!important;
-  --col2:#F4F7F8!important;
-  --text:#0C1D24!important;
-  --muted:#6E858D!important;
-  --line:#D9E3E6!important;
-  --card:#FFFFFF!important;
-  --card2:#F4F7F8!important;
-  background:#F7F9F9!important;
-  color:#0C1D24!important;
-}
-body.t-dark{
-  --bg:#0C1D24!important;
-  --bg2:#10262F!important;
-  --bg3:#132A33!important;
-  --col:#132A33!important;
-  --col2:#17343E!important;
-  --text:#E6EEF0!important;
-  --muted:#8FA9B0!important;
-  --line:#21424E!important;
-  --card:#132A33!important;
-  --card2:#17343E!important;
-  background:#0C1D24!important;
-  color:#E6EEF0!important;
-}
-body.t-light #mainWrap,
-body.t-light .view.active,
-body.t-light .board{background:#F7F9F9!important}
+body.t-dark,
 body.t-dark #mainWrap,
 body.t-dark .view.active,
-body.t-dark .board{background:#0C1D24!important}
-body.t-light header{background:#FFFFFF!important;border-color:#D9E3E6!important}
-body.t-dark header{background:#10262F!important;border-color:#21424E!important}
-
-/* Colunas discretas, sem blocos coloridos dominantes */
-body.t-light .col,
-body.t-light .kanban-col,
-body.t-light .column{
-  background:#F1F4F5!important;
-  border:1px solid #D9E3E6!important;
-  box-shadow:none!important;
+body.t-dark header {
+  background: var(--bg)!important;
 }
-body.t-dark .col,
-body.t-dark .kanban-col,
-body.t-dark .column{
-  background:#10262F!important;
-  border:1px solid #21424E!important;
-  box-shadow:none!important;
+body.t-dark #sideNav {
+  background: linear-gradient(180deg,#0C1D24 0%,#10262E 100%)!important;
+  border-right: 1px solid #21424E!important;
 }
-body.t-light .col-head{background:#F1F4F5!important;color:#0C1D24!important;border-color:#D9E3E6!important}
-body.t-dark .col-head{background:#10262F!important;color:#E6EEF0!important;border-color:#21424E!important}
-
-/* Cards: superfícies neutras; prioridade vira detalhe, não fundo */
-.card,
-.card.p-top,
-.card.p-high,
-.card.p-med,
-.card.p-low,
-.card.p-done,
-.card.p-scheduled{
-  background:#FFFFFF!important;
-  color:#0C1D24!important;
-  border:1px solid #D2DEE2!important;
-  box-shadow:0 4px 12px rgba(12,29,36,.07)!important;
+body.t-dark #sideNav .side-account-card,
+body.t-dark #sideNav .nav-tab,
+body.t-dark #sideNav .side-link {
+  background: transparent!important;
+  border-color: #21424E!important;
+  color: #E6EEF0!important;
 }
-body.t-dark .card,
-body.t-dark .card.p-top,
-body.t-dark .card.p-high,
-body.t-dark .card.p-med,
+body.t-dark #sideNav .side-section-title,
+body.t-dark #sideNav .side-link .meta {
+  color: #8FA9B0!important;
+}
+body.t-dark #sideNav .nav-tab.active {
+  background: linear-gradient(180deg,#FF6B5C 0%,#F25F52 100%)!important;
+  color: #fff!important;
+  border-color: transparent!important;
+  box-shadow: 0 10px 22px rgba(255,107,92,.24)!important;
+}
+body.t-dark #sideNav .nav-tab.active .nav-icon,
+body.t-dark #sideNav .nav-tab.active .side-label,
+body.t-dark #sideNav .nav-tab.active .nav-badge {
+  color: #fff!important;
+}
+body.t-dark .side-version {
+  background: rgba(255,107,92,.18)!important;
+  color: #ffd8d4!important;
+  border: 1px solid rgba(255,107,92,.32)!important;
+}
+body.t-dark .cbox,
+body.t-dark .btn,
+body.t-dark .more-menu,
+body.t-dark .theme-menu,
+body.t-dark .filt-panel select,
+body.t-dark .mf-sheet,
+body.t-dark .search-wrap input,
+body.t-dark select {
+  background: #132A33!important;
+  color: #E6EEF0!important;
+  border-color: #21424E!important;
+  box-shadow: none!important;
+}
+body.t-dark .cbox .t { color: #9FB4BB!important; }
+body.t-dark .cbox .n { color: #FF6B5C!important; }
+body.t-dark #btnNew,
+body.t-dark #btnNewMobile {
+  background: linear-gradient(180deg,#FF6B5C 0%,#F25F52 100%)!important;
+  color: #fff!important;
+  border-color: #E65A4D!important;
+  box-shadow: 0 10px 22px rgba(255,107,92,.22)!important;
+}
+body.t-dark .search-wrap input::placeholder {
+  color: #8FA9B0!important;
+}
+body.t-dark .col {
+  background: #10262E!important;
+  border: 1px solid #21424E!important;
+  border-radius: 18px!important;
+  box-shadow: 0 12px 26px rgba(0,0,0,.18)!important;
+}
+body.t-dark .col-head {
+  background: #10262E!important;
+  border-bottom: 1px solid #21424E!important;
+}
+body.t-dark .col-head .cname {
+  color: #E6EEF0!important;
+}
+body.t-dark .col-head .cnt {
+  background: #173541!important;
+  color: #FF6B5C!important;
+  border: 1px solid #21424E!important;
+}
+body.t-dark .card {
+  background: #173541!important;
+  border: 1px solid #28505E!important;
+  border-radius: 14px!important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.16)!important;
+}
 body.t-dark .card.p-low,
-body.t-dark .card.p-done,
-body.t-dark .card.p-scheduled{
-  background:#17343E!important;
-  color:#E6EEF0!important;
-  border:1px solid #2B505C!important;
-  box-shadow:0 5px 14px rgba(0,0,0,.16)!important;
+body.t-dark .card.p-med,
+body.t-dark .card.p-high,
+body.t-dark .card.p-top,
+body.t-dark .card.p-done {
+  background: #173541!important;
 }
-.card::before{width:4px!important;background:#8FA9B0!important}
-.card.p-top::before,.card.p-high::before{background:#FF6B5C!important}
-.card.p-med::before{background:#8FA9B0!important}
-.card.p-low::before{background:#B7C7CC!important}
-.card.p-done::before{background:#5FA786!important}
-.card.p-scheduled::before{background:#D89A46!important}
-
-/* Tipografia dentro dos cards */
-.card-nm,.sb-nm{color:#0C1D24!important;font-weight:800!important}
-.card-emp,.sb-emp,.card-meta{color:#607780!important}
-body.t-dark .card-nm,body.t-dark .sb-nm{color:#E6EEF0!important}
-body.t-dark .card-emp,body.t-dark .sb-emp,body.t-dark .card-meta{color:#8FA9B0!important}
-
-/* Badges de prioridade: discretos e coerentes */
-.card-prio,.prio-top,.prio-high,.prio-med,.prio-low,.prio-done{
-  background:#F0F4F5!important;
-  color:#21424E!important;
-  border:1px solid #CBD8DC!important;
-  box-shadow:none!important;
+body.t-dark .card::before {
+  width: 4px!important;
+  border-radius: 14px 0 0 14px!important;
 }
-.prio-top,.prio-high{
-  background:#FFF0ED!important;
-  color:#B53F34!important;
-  border-color:#F2A398!important;
+body.t-dark .card.p-top::before { background: #FF6B5C!important; }
+body.t-dark .card.p-high::before { background: #F6B94A!important; }
+body.t-dark .card.p-med::before { background: #56B6C2!important; }
+body.t-dark .card.p-low::before { background: #6F8791!important; }
+body.t-dark .card.p-done::before { background: #5FBF87!important; }
+body.t-dark .card-nm,
+body.t-dark .sb-nm { color: #F4FAFB!important; }
+body.t-dark .card-emp,
+body.t-dark .sb-emp { color: #A7BDC4!important; }
+body.t-dark .card-prio { display: none!important; }
+body.t-dark .chip {
+  background: #112B33!important;
+  color: #DCE8EA!important;
+  border-color: #28505E!important;
 }
-.prio-med{background:#EEF3F4!important;color:#355763!important;border-color:#B7C8CD!important}
-.prio-low{background:#F4F6F7!important;color:#6B7F86!important;border-color:#D6E0E3!important}
-.prio-done{background:#EDF6F1!important;color:#34775C!important;border-color:#AFCFBE!important}
-body.t-dark .card-prio,
-body.t-dark .prio-top,
-body.t-dark .prio-high,
-body.t-dark .prio-med,
-body.t-dark .prio-low,
-body.t-dark .prio-done{
-  background:#203F49!important;
-  color:#DDE8EB!important;
-  border-color:#365D68!important;
+body.t-dark .chip-nc-green {
+  background: #1E7A53!important;
+  color: #F2FFFA!important;
+  border-color: #299565!important;
 }
-body.t-dark .prio-top,body.t-dark .prio-high{
-  background:#4A2A29!important;
-  color:#FFD0CA!important;
-  border-color:#8C4A43!important;
+body.t-dark .chip-nc-red,
+body.t-dark .chip-dt-red {
+  background: #4B2527!important;
+  color: #FFD6D2!important;
+  border-color: #8E4447!important;
 }
-
-/* Ações e seleção: coral. Nunca azul vivo. */
-#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action,button[type="submit"],
-#sideNav .nav-tab.active,#sideNav .side-link.active,.nav-tab.active,
-.tabs button.active,.tab.active,[aria-selected="true"]{
-  background:#FF6B5C!important;
-  color:#FFFFFF!important;
-  border-color:#E85A4D!important;
-  box-shadow:0 7px 18px rgba(255,107,92,.18)!important;
+body.t-dark .chip-dt-soft,
+body.t-dark .chip-dt-blue,
+body.t-dark .chip-nc-neutral {
+  background: #183942!important;
+  color: #BFD5DB!important;
+  border-color: #2E5967!important;
 }
-#btnNew:hover,#btnNewMobile:hover,.btn-accent:hover,.btn-primary:hover{background:#F15D50!important;filter:none!important}
-
-/* Contadores e chips sem arco-íris visual */
-.cbox,.pill,.chip,.tag{
-  box-shadow:none!important;
+body.t-dark .wa-btn {
+  background: #1E5E4D!important;
+  border-color: #26745F!important;
 }
-body.t-light .cbox,body.t-light .pill,body.t-light .chip,body.t-light .tag{
-  background:#FFFFFF!important;
-  color:#21424E!important;
-  border-color:#D4E0E4!important;
-}
-body.t-dark .cbox,body.t-dark .pill,body.t-dark .chip,body.t-dark .tag{
-  background:#17343E!important;
-  color:#DDE8EB!important;
-  border-color:#315762!important;
-}
-.cbox .n{color:#FF6B5C!important}
-
-/* Campo, filtros e botões secundários */
-body.t-light .btn:not(.btn-accent):not(#btnNew):not(#btnNewMobile),
-body.t-light select,body.t-light input,body.t-light .search-wrap{
-  background:#FFFFFF!important;color:#0C1D24!important;border-color:#D4E0E4!important;
-}
-body.t-dark .btn:not(.btn-accent):not(#btnNew):not(#btnNewMobile),
-body.t-dark select,body.t-dark input,body.t-dark .search-wrap{
-  background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important;
-}
-
-/* WhatsApp permanece verde por reconhecimento funcional */
-.btn-wa,.wa-btn,[data-action="whatsapp"]{background:#25D366!important;color:#fff!important;border-color:#1EAF54!important}
-
-/* Sidebar é base principal da identidade */
-#sideNav{background:#0C1D24!important;border-right:1px solid #21424E!important}
-#sideNav .side-link,#sideNav .nav-tab{color:#E6EEF0!important}
-#sideNav .side-link:hover,#sideNav .nav-tab:hover{background:#132A33!important}
-
-/* =========================================================
-   LEVECRM V48 — TELA PRINCIPAL CONFORME PRÉVIAS APROVADAS
-   ========================================================= */
-:root{
-  --brand-petrol:#0C1D24;
-  --brand-surface:#132A33;
-  --brand-coral:#FF6B5C;
-  --brand-ice:#E6EEF0;
-  --brand-muted:#8FA9B0;
-  --brand-line:#21424E;
-}
-
-/* Estrutura geral */
-body.has-sidebar #mainWrap{max-width:none!important;padding:16px!important;min-height:calc(100vh - 76px)!important}
-body.has-sidebar header{min-height:76px!important}
-.h-row1{min-height:76px!important;gap:10px!important}
-.h-wrap{max-width:none!important;padding:0 18px!important}
-#topLogoHome{display:none!important}
-#statusbar,.nav-sep{display:none!important}
-.h-spacer{display:none!important}
-
-.board{
-  grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  gap:14px!important;
-  align-items:start!important;
-  background:transparent!important;
-}
-.col{
-  border-radius:14px!important;
-  overflow:hidden!important;
-  min-width:0!important;
-}
-.col-head{
-  min-height:62px!important;
-  padding:16px 18px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-}
-.col-title-wrap{display:flex;align-items:center;gap:9px;min-width:0}
-.col-head .cname{font-family:Sora,Inter,sans-serif!important;font-size:14px!important;letter-spacing:.02em!important}
-.col-head .cnt{font-size:11px!important;padding:4px 8px!important;min-width:25px;text-align:center}
-.col-menu{appearance:none;border:0;background:transparent;color:var(--muted);font-size:15px;letter-spacing:2px;cursor:pointer;padding:4px}
-.dropzone{padding:10px!important;gap:10px!important;overflow:visible!important;background:transparent!important}
-
-/* Cards iguais à prévia: neutros, espaçosos e com detalhe lateral */
-.card,
-.card.p-top,.card.p-high,.card.p-med,.card.p-low,.card.p-done,.card.p-scheduled{
-  min-height:142px!important;
-  padding:16px 16px 14px 18px!important;
-  border-radius:12px!important;
-  transition:transform .15s ease,box-shadow .15s ease!important;
-}
-.card:hover{transform:translateY(-2px)!important}
-.card::before{width:3px!important;border-radius:12px 0 0 12px!important}
-.card-row1{display:flex!important;grid-template-columns:none!important;align-items:flex-start!important;margin-bottom:7px!important;gap:10px!important}
-.card-nm{font-family:Sora,Inter,sans-serif!important;font-size:15px!important;line-height:1.25!important;padding:0!important;min-width:0}
-.card-prio{font-size:10px!important;padding:5px 9px!important;border-radius:7px!important;text-transform:uppercase!important;letter-spacing:.03em!important}
-.card-detail{font-size:12px!important;font-weight:600!important;margin-bottom:10px!important;padding:0!important}
-.card-contact{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:12px;white-space:nowrap;overflow:hidden}
-.card-phone{overflow:hidden;text-overflow:ellipsis}
-.card-wa-text{position:relative;padding-left:9px}
-.card-wa-text::before{content:'•';position:absolute;left:0}
-.card-row2{display:flex!important;grid-template-columns:none!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;min-height:28px}
-.card-chips{margin-right:auto!important;gap:6px!important}
-.chip{font-size:10px!important;padding:4px 8px!important}
-.wa-btn{width:28px!important;height:28px!important;border-radius:8px!important;display:flex!important;align-items:center!important;justify-content:center!important}
-.wa-btn svg{width:16px!important;height:16px!important}
-
-/* Cabeçalho e controles */
-#sideToggleMain{width:48px!important;height:48px!important;border-radius:13px!important;font-size:22px!important}
-.cbox{height:36px!important;padding:0 13px!important;gap:8px!important;font-size:11px!important;text-transform:uppercase!important;letter-spacing:.03em!important}
-.cbox .n{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--brand-coral)!important;color:#fff!important;font-size:10px!important}
-.search-wrap{height:48px!important;border-radius:12px!important;min-width:250px!important}
-.search-wrap input{height:46px!important;font-size:13px!important}
-.btn,#btnNew{height:48px!important;border-radius:12px!important;font-weight:750!important}
-#btnNew{min-width:130px!important}
-
-/* Sidebar */
-#sideNav{width:var(--sidebar-w)!important}
-.side-top{padding:20px 18px 14px!important}
-.side-logo img{width:52px!important;height:52px!important;border-radius:12px!important}
-.side-brand strong{font-family:Sora,Inter,sans-serif!important;font-size:21px!important}
-.side-account-card{margin:8px 14px 16px!important;padding:13px 14px!important;border-radius:12px!important}
-.side-section{padding:0 14px!important}
-.side-section-title{font-size:10px!important;letter-spacing:.11em!important;margin:14px 6px 7px!important}
-#sideNav .nav-tab,#sideNav .side-link{min-height:48px!important;border-radius:10px!important;padding:0 13px!important;font-size:14px!important}
-#sideNav .nav-icon{width:19px!important;height:19px!important}
-
-/* TEMA CLARO */
-body.t-light{background:#E6EEF0!important;color:#0C1D24!important}
-body.t-light #mainWrap,body.t-light .view.active{background:#E6EEF0!important}
-body.t-light header{background:#FFFFFF!important;border-color:#D7E2E5!important;box-shadow:0 4px 18px rgba(12,29,36,.06)!important}
-body.t-light #sideNav{background:#FFFFFF!important;border-right:1px solid #D7E2E5!important}
-body.t-light #sideNav .side-brand strong,body.t-light #sideNav .side-brand small,body.t-light #sideNav .side-version,
-body.t-light #sideNav .side-section-title,body.t-light #sideNav .side-link,body.t-light #sideNav .nav-tab{color:#0C1D24!important}
-body.t-light #sideNav .side-section-title{color:#78919A!important}
-body.t-light .side-account-card{background:#F4F7F8!important;border-color:#D7E2E5!important;color:#0C1D24!important}
-body.t-light #sideNav .nav-tab:hover,body.t-light #sideNav .side-link:hover{background:#F3F6F7!important}
-body.t-light #sideNav .nav-tab.active{background:#FF6B5C!important;color:#fff!important}
-body.t-light .col{background:#FFFFFF!important;border:1px solid #D7E2E5!important;box-shadow:0 7px 22px rgba(12,29,36,.05)!important}
-body.t-light .col-head{background:#FFFFFF!important;border-color:#E0E8EA!important;color:#0C1D24!important}
-body.t-light .col-head .cnt{background:#FFF0ED!important;color:#D94D40!important}
-body.t-light .card,body.t-light .card.p-top,body.t-light .card.p-high,body.t-light .card.p-med,body.t-light .card.p-low,body.t-light .card.p-done,body.t-light .card.p-scheduled{
-  background:#FFFFFF!important;color:#0C1D24!important;border:1px solid #D7E2E5!important;box-shadow:0 3px 12px rgba(12,29,36,.06)!important
-}
-body.t-light .card-nm{color:#0C1D24!important}
-body.t-light .card-detail,body.t-light .card-contact{color:#6F8790!important}
-body.t-light .card-prio{background:#F4F7F8!important;color:#58717B!important;border-color:#D7E2E5!important}
-body.t-light .prio-top,body.t-light .prio-high{background:#FFF1EE!important;color:#D94D40!important;border-color:#FFB9B1!important}
-body.t-light .cbox,body.t-light .search-wrap,body.t-light .btn:not(#btnNew){background:#FFFFFF!important;color:#0C1D24!important;border-color:#D7E2E5!important}
-body.t-light #sideToggleMain{background:#FFFFFF!important;color:#0C1D24!important;border:1px solid #D7E2E5!important}
-body.t-light .card.p-top::before,body.t-light .card.p-high::before{background:#FF6B5C!important}
-body.t-light .card.p-med::before{background:#5A8BA0!important}
-body.t-light .card.p-low::before{background:#A9BAC0!important}
-
-/* TEMA ESCURO — petróleo, nunca preto */
-body.t-dark{background:#0C1D24!important;color:#E6EEF0!important}
-body.t-dark #mainWrap,body.t-dark .view.active{background:#0C1D24!important}
-body.t-dark header{background:#0F252E!important;border-color:#21424E!important;box-shadow:none!important}
-body.t-dark #sideNav{background:#0F252E!important;border-right:1px solid #21424E!important}
-body.t-dark .side-account-card{background:#132A33!important;border-color:#21424E!important}
-body.t-dark #sideNav .nav-tab:hover,body.t-dark #sideNav .side-link:hover{background:#132A33!important}
-body.t-dark #sideNav .nav-tab.active{background:#FF6B5C!important;color:#fff!important}
-body.t-dark .col{background:#10262F!important;border:1px solid #21424E!important;box-shadow:none!important}
-body.t-dark .col-head{background:#10262F!important;border-color:#21424E!important;color:#E6EEF0!important}
-body.t-dark .col-head .cnt{background:#FF6B5C!important;color:#fff!important}
-body.t-dark .card,body.t-dark .card.p-top,body.t-dark .card.p-high,body.t-dark .card.p-med,body.t-dark .card.p-low,body.t-dark .card.p-done,body.t-dark .card.p-scheduled{
-  background:#132A33!important;color:#E6EEF0!important;border:1px solid #21424E!important;box-shadow:0 4px 12px rgba(3,13,17,.18)!important
-}
-body.t-dark .card-nm{color:#E6EEF0!important}
-body.t-dark .card-detail,body.t-dark .card-contact{color:#8FA9B0!important}
-body.t-dark .card-prio{background:#17343E!important;color:#BBD0D6!important;border-color:#315762!important}
-body.t-dark .prio-top,body.t-dark .prio-high{background:#3B2525!important;color:#FF9B91!important;border-color:#71413D!important}
-body.t-dark .cbox,body.t-dark .search-wrap,body.t-dark .btn:not(#btnNew){background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
-body.t-dark #sideToggleMain{background:#132A33!important;color:#E6EEF0!important;border:1px solid #21424E!important}
-body.t-dark .card.p-top::before,body.t-dark .card.p-high::before{background:#FF6B5C!important}
-body.t-dark .card.p-med::before{background:#5F94A8!important}
-body.t-dark .card.p-low::before{background:#78939D!important}
-
-/* Ações */
-#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action{background:#FF6B5C!important;border-color:#E4574B!important;color:#fff!important;box-shadow:0 7px 18px rgba(255,107,92,.18)!important}
-
-/* Desktop mantém quatro colunas até largura útil menor */
-@media (min-width:1180px){.board{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
-@media (max-width:1179px) and (min-width:761px){.board{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media (max-width:760px){
-  body.has-sidebar #mainWrap{padding:8px!important}
-  .board{grid-template-columns:1fr!important}
-  .card{min-height:auto!important}
+body.t-dark .toast {
+  background: #132A33!important;
+  color: #E6EEF0!important;
+  border: 1px solid #21424E!important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.28)!important;
 }

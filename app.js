@@ -14,7 +14,7 @@ let editingId = null;
 let origSnap = null;
 let SELECTED_LEAD_ID = null;
 const NOTIFICATION_TIMERS = new Map();
-const ALL_THEMES = ['t-light','t-dark','t-navy','t-direciona'];
+const ALL_THEMES = ['t-navy','t-light','t-dark','t-direciona'];
 const dlg = document.getElementById('dlg');
 const leadForm = document.getElementById('leadForm');
 let aiImgB64 = null;
@@ -41,7 +41,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=46';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=44';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -523,24 +523,21 @@ function cardHTML(l){
 
   if(isSB){
     return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
-      <div class="card-row1"><div class="sb-row"><div class="sb-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,26))}</div><div class="sb-sep">—</div><div class="sb-emp">${escH(l.empreendimento||'—')}</div></div>${pv.lbl}</div>
+      <div class="card-row1"><div class="sb-row"><div class="sb-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,26))}</div><div class="sb-sep">—</div><div class="sb-emp">${escH(l.empreendimento||'—')}</div></div></div>
       <div class="card-row2"><div class="card-chips">${ncHTML}${attHTML}</div>${wa}</div>
     </div>`;}
 
   if(isPerd){
     const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#64748B">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
     return`<div class="card ${pv.cls}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
-      <div class="card-row1"><div class="card-nm" style="padding-left:6px" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div>${pv.lbl}</div>
+      <div class="card-row1"><div class="card-nm" style="padding-left:6px" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div></div>
       <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}</div>${mot}
     </div>`;}
 
   const b=badgeInfo(l);
-  const phone=l.telefone?escH(String(l.telefone)):'Sem telefone';
   return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
-    <div class="card-row1"><div class="card-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div>${pv.lbl}</div>
-    <div class="card-detail card-emp">${escH(l.empreendimento||'Outros')}</div>
-    <div class="card-contact"><span class="card-phone">☎ ${phone}</span><span class="card-wa-text">WhatsApp</span></div>
-    <div class="card-row2"><div class="card-chips">${ncHTML}${attHTML}</div>${wa}<span class="chip ${escH(b.cls)}">${b.text}</span></div>
+    <div class="card-row1"><div class="card-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div></div>
+    <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}<span class="chip ${escH(b.cls)}">${b.text}</span></div>
   </div>`;
 }
 
@@ -629,7 +626,7 @@ function render(){
     const inCol=sortLeads(leads,etapa);
     const sec=document.createElement('section');
     sec.className='col';sec.dataset.etapa=etapa;
-    sec.innerHTML=`<div class="col-head"><div class="col-title-wrap"><span class="cname">${escH(etapa)}</span><span class="cnt">${inCol.length}</span></div><button class="col-menu" type="button" aria-label="Mais opções" onclick="event.stopPropagation()">•••</button></div><div class="dropzone" data-drop="${escH(etapa)}">${inCol.map(cardHTML).join('')}</div>`;
+    sec.innerHTML=`<div class="col-head"><span class="cname">${escH(etapa)}</span><span class="cnt">${inCol.length}</span></div><div class="dropzone" data-drop="${escH(etapa)}">${inCol.map(cardHTML).join('')}</div>`;
     board.appendChild(sec);
   });
   wireDnD();
@@ -1533,18 +1530,18 @@ async function importCSV(text){
   alert(`Importação concluída.\nSalvos: ${saved}\nFalhas: ${failed}`);
 }
 function applyTheme(t){
-  const theme=t==='t-dark'?'t-dark':'t-light';
+  const theme=ALL_THEMES.includes(t)?t:'t-light';
   document.body.classList.remove(...ALL_THEMES);
   document.body.classList.add(theme);
   document.querySelectorAll('.theme-opt').forEach(o=>o.classList.toggle('active',o.dataset.theme===theme));
-  const lbl={'t-light':'Claro','t-dark':'Escuro'};
+  const lbl={'t-navy':'Azul','t-light':'Claro','t-dark':'Escuro','t-direciona':'Direciona'};
   const themeToggle=document.getElementById('themeToggle');
   if(themeToggle) themeToggle.textContent=(lbl[theme]||'Tema')+' ▾';
   const sideTheme=document.getElementById('sideThemeCurrent');
   if(sideTheme) sideTheme.textContent=(lbl[theme]||'Tema');
   lsSet('crm_theme',theme);
-  const themeColors={'t-light':'#E6EEF0','t-dark':'#0C1D24'};
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeColors[theme]||'#0C1D24');
+  const themeColors={'t-light':'#F5F7FA','t-dark':'#08090C','t-direciona':'#0C1D24'};
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeColors[theme]||'#082248');
   setupPWA();
 }
 
@@ -1598,7 +1595,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=46');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=44');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1645,7 +1642,7 @@ const agendaTop=document.getElementById('agendaTabBtn'); if(agendaTop) agendaTop
 const agendaSide=document.getElementById('agendaTabBtnSide'); if(agendaSide) agendaSide.addEventListener('click',openAgenda);
 const lateSide=document.getElementById('lateSafeBtn'); if(lateSide) lateSide.addEventListener('click',openLate);
 function syncSidebarUtilityState(){
-  const themeMap={'t-light':'Claro','t-dark':'Escuro'};
+  const themeMap={'t-light':'Claro','t-dark':'Escuro','t-navy':'Azul','t-direciona':'Direciona'};
   const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
   const themeEl=document.getElementById('sideThemeCurrent');if(themeEl)themeEl.textContent=themeMap[current]||'Claro';
   const rawName=String(ACCESS_USER?.nome||ACCESS_USER?.name||ACCESS_USER?.displayName||'').trim();
@@ -1653,7 +1650,7 @@ function syncSidebarUtilityState(){
   const installBtn=document.getElementById('sideInstallApp');if(installBtn)installBtn.style.display=document.body.classList.contains('app-installed')?'none':'flex';
 }
 function cycleSidebarTheme(){
-  const order=['t-light','t-dark'];
+  const order=['t-light','t-dark','t-navy','t-direciona'];
   const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
   const next=order[(order.indexOf(current)+1)%order.length];
   applyTheme(next);
@@ -1872,7 +1869,7 @@ function initApp(){
   updateLateBadge();
   setupPWA();
   registerSW();
-  applyTheme(lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light');
+  applyTheme('t-light');
   updateInstallBtn();
   setInterval(()=>{document.querySelectorAll('.card').forEach(c=>{const id=c.dataset.id;const l=ALL.find(x=>x.id===id);if(!l)return;const nc=nextContact(l);const ncEl=c.querySelector('.chip-nc-neutral,.chip-nc-green,.chip-nc-red');if(ncEl&&nc){ncEl.className=`chip ${nc.cls}`;ncEl.textContent=nc.text;}});},60000);
   setInterval(updateAgendaBadge,60000);
@@ -2245,7 +2242,7 @@ async function importInitialLeadsIfNeeded(existingRows=[]){
     if(complete)return false;
   }
   if(marker?.payload?.disabled===true&&currentSourceRows.length>0)return false;
-  if(unrelated.length)throw new Error('A conta contém cadastros diferentes da planilha. A importação foi bloqueada para não misturar dados.');
+  if(unrelated.length)return false;
 
   showToast(`Importando ${200-currentSourceRows.length} leads restantes...`,6000);
   for(let i=0;i<source.leads.length;i+=20){
@@ -2349,7 +2346,7 @@ async function loadAll(){
     let [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
     let imported=false;
     try{imported=await importInitialLeadsIfNeeded(rows||[]);}
-    catch(impErr){console.warn('Importação inicial não executada:',impErr);showToast(`Aviso: ${impErr?.message||'importação inicial não executada'}`,5000);}
+    catch(impErr){console.warn('Importação inicial não executada:',impErr);}
     if(imported){
       const reload=await AUTH_CLIENT.from(TBL).select('*');
       if(reload.error)throw reload.error;
