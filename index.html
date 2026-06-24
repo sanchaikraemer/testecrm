@@ -3,7 +3,7 @@
 <head>
 <script>
 (function(){
-  const KEY='levecrm_v43_cache_reset_done';
+  const KEY='levecrm_v45_cache_reset_done';
   if(localStorage.getItem(KEY)==='1') return;
   localStorage.setItem(KEY,'1');
   Promise.resolve().then(async()=>{
@@ -18,7 +18,7 @@
       }
     }catch(e){console.warn('Atualização de cache:',e);}
     const u=new URL(location.href);
-    u.searchParams.set('versao','43');
+    u.searchParams.set('versao','45');
     u.searchParams.set('_',Date.now());
     location.replace(u.toString());
   });
@@ -31,10 +31,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#0D1B2E"/>
+<meta name="theme-color" content="#0C1D24"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="44"/>
+<meta name="application-version" content="45"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -89,9 +89,9 @@
 
 
 
-<link rel="stylesheet" href="./styles.css?v=44"/>
+<link rel="stylesheet" href="./styles.css?v=45"/>
 </head>
-<body class="t-navy has-sidebar">
+<body class="t-light has-sidebar">
 
 
 <div id="sideBackdrop"></div>
@@ -99,7 +99,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v44</span></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v45</span></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -171,7 +171,6 @@
         <div class="theme-wrap" id="themeWrap">
           <button class="btn" id="themeToggle">Claro ▾</button>
           <div class="theme-menu" id="themeMenu">
-            <button class="theme-opt" data-theme="t-navy">Azul</button>
             <button class="theme-opt active" data-theme="t-light">Claro</button>
             <button class="theme-opt" data-theme="t-dark">Escuro</button>
           </div>

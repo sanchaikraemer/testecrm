@@ -3,7 +3,7 @@
 <head>
 <script>
 (function(){
-  const KEY='levecrm_v43_cache_reset_done';
+  const KEY='levecrm_v45_cache_reset_done';
   if(localStorage.getItem(KEY)==='1') return;
   localStorage.setItem(KEY,'1');
   Promise.resolve().then(async()=>{
@@ -18,7 +18,7 @@
       }
     }catch(e){console.warn('Atualização de cache:',e);}
     const u=new URL(location.href);
-    u.searchParams.set('versao','43');
+    u.searchParams.set('versao','45');
     u.searchParams.set('_',Date.now());
     location.replace(u.toString());
   });
@@ -30,18 +30,18 @@
   <title>Gerador de Proposta Premium v3 - LeveCRM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #185FA5;
-      --primary-dark: #0d4478;
-      --primary-light: #eaf2fb;
-      --bg-app: #f8f9fa;
-      --bg-panel: #ffffff;
-      --bg-preview: #f0f2f5;
-      --text-main: #1a1a1a;
-      --text-muted: #6c757d;
-      --border: #dee2e6;
+      --primary: #FF6B5C;
+      --primary-dark: #0C1D24;
+      --primary-light: #FFF0ED;
+      --bg-app: #E6EEF0;
+      --bg-panel: #FFFFFF;
+      --bg-preview: #DDE8EB;
+      --text-main: #0C1D24;
+      --text-muted: #627A83;
+      --border: #D5E1E5;
       --success: #28a745;
       --warning: #ffc107;
       --danger: #dc3545;
@@ -84,7 +84,7 @@
     .sidebar-header {
       padding: 18px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(to right, #fff, #f8f9fa);
+      background: linear-gradient(to right, #fff, #F4F7F8);
     }
 
     .sidebar-header h1 {
@@ -112,7 +112,7 @@
     .sidebar-footer {
       padding: 14px;
       border-top: 1px solid var(--border);
-      background: #f8f9fa;
+      background: #F4F7F8;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
@@ -280,7 +280,7 @@
     }
 
     .btn-outline:hover {
-      background: #f8f9fa;
+      background: #F4F7F8;
       color: var(--text-main);
     }
 
@@ -336,7 +336,7 @@
 
     .company-info h2 {
       margin: 0;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Sora', sans-serif;
       font-size: 22px;
       color: var(--primary-dark);
       display:none;
@@ -380,7 +380,7 @@
     }
 
     .client-name {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Sora', sans-serif;
       font-size: 26px;
       margin: 0;
       color: #1a1a1a;
@@ -421,7 +421,7 @@
     }
 
     .card {
-      background: #f8f9fa;
+      background: #F4F7F8;
       padding: 12px;
       border-radius: var(--radius-md);
       border-left: 3px solid var(--primary);
@@ -463,7 +463,7 @@
     .negotiation-table th {
       text-align: left;
       padding: 10px;
-      background: #f8f9fa;
+      background: #F4F7F8;
       font-size: 11px;
       text-transform: uppercase;
       color: var(--text-muted);

@@ -14,7 +14,7 @@ let editingId = null;
 let origSnap = null;
 let SELECTED_LEAD_ID = null;
 const NOTIFICATION_TIMERS = new Map();
-const ALL_THEMES = ['t-navy','t-light','t-dark','t-direciona'];
+const ALL_THEMES = ['t-light','t-dark'];
 const dlg = document.getElementById('dlg');
 const leadForm = document.getElementById('leadForm');
 let aiImgB64 = null;
@@ -1534,14 +1534,14 @@ function applyTheme(t){
   document.body.classList.remove(...ALL_THEMES);
   document.body.classList.add(theme);
   document.querySelectorAll('.theme-opt').forEach(o=>o.classList.toggle('active',o.dataset.theme===theme));
-  const lbl={'t-navy':'Azul','t-light':'Claro','t-dark':'Escuro','t-direciona':'Direciona'};
+  const lbl={'t-light':'Claro','t-dark':'Escuro'};
   const themeToggle=document.getElementById('themeToggle');
   if(themeToggle) themeToggle.textContent=(lbl[theme]||'Tema')+' ▾';
   const sideTheme=document.getElementById('sideThemeCurrent');
   if(sideTheme) sideTheme.textContent=(lbl[theme]||'Tema');
   lsSet('crm_theme',theme);
-  const themeColors={'t-light':'#F5F7FA','t-dark':'#08090C','t-direciona':'#0C1D24'};
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeColors[theme]||'#082248');
+  const themeColors={'t-light':'#E6EEF0','t-dark':'#0C1D24'};
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeColors[theme]||'#0C1D24');
   setupPWA();
 }
 
@@ -1595,7 +1595,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=44');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=45');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1642,7 +1642,7 @@ const agendaTop=document.getElementById('agendaTabBtn'); if(agendaTop) agendaTop
 const agendaSide=document.getElementById('agendaTabBtnSide'); if(agendaSide) agendaSide.addEventListener('click',openAgenda);
 const lateSide=document.getElementById('lateSafeBtn'); if(lateSide) lateSide.addEventListener('click',openLate);
 function syncSidebarUtilityState(){
-  const themeMap={'t-light':'Claro','t-dark':'Escuro','t-navy':'Azul','t-direciona':'Direciona'};
+  const themeMap={'t-light':'Claro','t-dark':'Escuro'};
   const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
   const themeEl=document.getElementById('sideThemeCurrent');if(themeEl)themeEl.textContent=themeMap[current]||'Claro';
   const rawName=String(ACCESS_USER?.nome||ACCESS_USER?.name||ACCESS_USER?.displayName||'').trim();
@@ -1650,7 +1650,7 @@ function syncSidebarUtilityState(){
   const installBtn=document.getElementById('sideInstallApp');if(installBtn)installBtn.style.display=document.body.classList.contains('app-installed')?'none':'flex';
 }
 function cycleSidebarTheme(){
-  const order=['t-light','t-dark','t-navy','t-direciona'];
+  const order=['t-light','t-dark'];
   const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
   const next=order[(order.indexOf(current)+1)%order.length];
   applyTheme(next);
@@ -1869,7 +1869,7 @@ function initApp(){
   updateLateBadge();
   setupPWA();
   registerSW();
-  applyTheme('t-light');
+  applyTheme(lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light');
   updateInstallBtn();
   setInterval(()=>{document.querySelectorAll('.card').forEach(c=>{const id=c.dataset.id;const l=ALL.find(x=>x.id===id);if(!l)return;const nc=nextContact(l);const ncEl=c.querySelector('.chip-nc-neutral,.chip-nc-green,.chip-nc-red');if(ncEl&&nc){ncEl.className=`chip ${nc.cls}`;ncEl.textContent=nc.text;}});},60000);
   setInterval(updateAgendaBadge,60000);

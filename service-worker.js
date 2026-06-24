@@ -1,4 +1,4 @@
-const CACHE='levecrm-v44';
+const CACHE='levecrm-v45';
 const CORE=[
   './','./index.html','./propostas.html','./styles.css?v=44','./app.js?v=44','./propostas.js?v=44',
   './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=44'
