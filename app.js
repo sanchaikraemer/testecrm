@@ -41,7 +41,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=43';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=44';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -1077,10 +1077,17 @@ async function agLoad(){
     AG_CACHE=(Array.isArray(d)?d:[]).map(agMapRow);
     return AG_CACHE;
   }catch(e){
-    console.error('Agenda load error',e);
-    showToast('Erro ao carregar agenda.');
-    AG_CACHE=[];
-    return AG_CACHE;
+    // Bancos antigos podem ainda não ter a coluna lead_id: tenta de novo sem ela.
+    try{
+      const d=await sbFetch(`${AG_TBL}?select=id,data,hora,descricao,notify&order=data.asc,hora.asc`);
+      AG_CACHE=(Array.isArray(d)?d:[]).map(agMapRow);
+      return AG_CACHE;
+    }catch(e2){
+      console.error('Agenda load error',e2);
+      showToast('Erro ao carregar agenda.');
+      AG_CACHE=[];
+      return AG_CACHE;
+    }
   }
 }
 function agForDay(key){return agAll().filter(e=>e.date===key).sort((a,b)=>String(a.time).localeCompare(String(b.time)));}
@@ -1588,7 +1595,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=43');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=44');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -2175,8 +2182,14 @@ function getAdminOrigs(){return SETTINGS_CACHE.origem.map(x=>x.nome||x.name||'')
 
 async function loadSettings(){
   if(!ACCESS_USER?.id)return;
-  const rows=await sbFetch(`${SETTINGS_TBL}?select=id,category,name,payload&order=created_at.asc`);
   SETTINGS_CACHE={responsavel:[],empreendimento:[],origem:[]};
+  let rows;
+  try{
+    rows=await sbFetch(`${SETTINGS_TBL}?select=id,category,name,payload&order=created_at.asc`);
+  }catch(e){
+    console.warn('Configurações indisponíveis (tabela crm_settings ausente no Supabase?). Carregando o CRM sem elas.',e);
+    return;
+  }
   (rows||[]).forEach(r=>{
     if(String(r.name||'').startsWith('__'))return;
     const item={id:r.id,nome:r.name,...(r.payload||{})};
@@ -2195,8 +2208,13 @@ function mergeLeadOptionsIntoLists(){
   syncFilterSelects();
 }
 async function getInitialImportMarker(){
-  const rows=await sbFetch(`${SETTINGS_TBL}?select=id,payload&category=eq.origem&name=eq.${encodeURIComponent(INITIAL_IMPORT_MARKER)}&limit=1`);
-  return rows?.[0]||null;
+  try{
+    const rows=await sbFetch(`${SETTINGS_TBL}?select=id,payload&category=eq.origem&name=eq.${encodeURIComponent(INITIAL_IMPORT_MARKER)}&limit=1`);
+    return rows?.[0]||null;
+  }catch(e){
+    console.warn('Não foi possível ler o marcador de importação (crm_settings ausente?).',e);
+    return null;
+  }
 }
 async function importInitialLeadsIfNeeded(existingRows=[]){
   if(!ACCESS_USER?.id||!ADMIN_EMAILS.includes(String(ACCESS_USER.email||'').toLowerCase()))return false;
@@ -2250,19 +2268,23 @@ async function importInitialLeadsIfNeeded(existingRows=[]){
   const valid=imported.length===200&&Object.entries(expectedCounts).every(([etapa,total])=>Number(importedCounts[etapa]||0)===total);
   if(!valid)throw new Error(`Importação incompleta: ${imported.length}/200. Prioritário ${importedCounts['Prioritário']||0}/7, Qualificação ${importedCounts['Qualificação']||0}/29, Retomada ${importedCounts['Retomada']||0}/22, Sem foco ${importedCounts['Sem foco']||0}/142.`);
 
-  await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
-    method:'POST',
-    body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v43',count:200,counts:expectedCounts,imported_at:nowISO()}},
-    prefer:'resolution=merge-duplicates,return=minimal'
-  });
+  try{
+    await sbFetch(`${SETTINGS_TBL}?on_conflict=access_user_id,category,name`,{
+      method:'POST',
+      body:{access_user_id:ACCESS_USER.id,category:'origem',name:INITIAL_IMPORT_MARKER,payload:{version:'v43',count:200,counts:expectedCounts,imported_at:nowISO()}},
+      prefer:'resolution=merge-duplicates,return=minimal'
+    });
+  }catch(e){console.warn('Leads importados, mas não foi possível gravar o marcador (crm_settings ausente?).',e);}
   return true;
 }
 
 async function loadHistory(){
   HISTORY_CACHE={};
   if(!ALL.length)return;
-  const rows=await sbFetch(`${HIST_TBL}?select=id,lead_id,action,metadata,created_at&order=created_at.desc`);
-  (rows||[]).forEach(r=>(HISTORY_CACHE[r.lead_id]||=[]).push({id:r.id,date:r.created_at,action:r.action,metadata:r.metadata||{}}));
+  try{
+    const rows=await sbFetch(`${HIST_TBL}?select=id,lead_id,action,metadata,created_at&order=created_at.desc`);
+    (rows||[]).forEach(r=>(HISTORY_CACHE[r.lead_id]||=[]).push({id:r.id,date:r.created_at,action:r.action,metadata:r.metadata||{}}));
+  }catch(e){console.warn('Histórico indisponível (tabela lead_history ausente?).',e);}
 }
 function getHistory(id){return (HISTORY_CACHE[id]||[]).slice();}
 async function addHistory(id,action,metadata={}){
@@ -2322,7 +2344,9 @@ async function loadAll(){
       console.warn('levecrm_assert_access indisponível no banco; seguindo sem o gate server-side.',accessError);
     }
     let [{data:rows,error},_settings]=await Promise.all([AUTH_CLIENT.from(TBL).select('*'),loadSettings()]);if(error)throw error;
-    const imported=await importInitialLeadsIfNeeded(rows||[]);
+    let imported=false;
+    try{imported=await importInitialLeadsIfNeeded(rows||[]);}
+    catch(impErr){console.warn('Importação inicial não executada:',impErr);showToast(`Aviso: ${impErr?.message||'importação inicial não executada'}`,5000);}
     if(imported){
       const reload=await AUTH_CLIENT.from(TBL).select('*');
       if(reload.error)throw reload.error;
