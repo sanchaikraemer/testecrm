@@ -535,9 +535,12 @@ function cardHTML(l){
     </div>`;}
 
   const b=badgeInfo(l);
+  const phone=l.telefone?escH(String(l.telefone)):'Sem telefone';
   return`<div class="card ${pv.cls}${overdue?' overdue-contact':''}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
     <div class="card-row1"><div class="card-nm" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div>${pv.lbl}</div>
-    <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}<span class="chip ${escH(b.cls)}">${b.text}</span></div>
+    <div class="card-detail card-emp">${escH(l.empreendimento||'Outros')}</div>
+    <div class="card-contact"><span class="card-phone">☎ ${phone}</span><span class="card-wa-text">WhatsApp</span></div>
+    <div class="card-row2"><div class="card-chips">${ncHTML}${attHTML}</div>${wa}<span class="chip ${escH(b.cls)}">${b.text}</span></div>
   </div>`;
 }
 
@@ -626,7 +629,7 @@ function render(){
     const inCol=sortLeads(leads,etapa);
     const sec=document.createElement('section');
     sec.className='col';sec.dataset.etapa=etapa;
-    sec.innerHTML=`<div class="col-head"><span class="cname">${escH(etapa)}</span><span class="cnt">${inCol.length}</span></div><div class="dropzone" data-drop="${escH(etapa)}">${inCol.map(cardHTML).join('')}</div>`;
+    sec.innerHTML=`<div class="col-head"><div class="col-title-wrap"><span class="cname">${escH(etapa)}</span><span class="cnt">${inCol.length}</span></div><button class="col-menu" type="button" aria-label="Mais opções" onclick="event.stopPropagation()">•••</button></div><div class="dropzone" data-drop="${escH(etapa)}">${inCol.map(cardHTML).join('')}</div>`;
     board.appendChild(sec);
   });
   wireDnD();

@@ -8107,7 +8107,7 @@ body.t-dark #mobileActions{background:#132A33!important;border-color:#21424E!imp
 body.t-dark ::placeholder{color:#8FA9B0!important}
 
 /* =========================================================
-   LEVECRM V47 — APLICAÇÃO CORRETA DA IDENTIDADE
+   LEVECRM V48 — APLICAÇÃO CORRETA DA IDENTIDADE
    Base estrutural: petróleo. Superfícies: branco/petróleo claro.
    Coral somente em ações, seleção e atenção.
    ========================================================= */
@@ -8282,39 +8282,154 @@ body.t-dark select,body.t-dark input,body.t-dark .search-wrap{
 #sideNav .side-link,#sideNav .nav-tab{color:#E6EEF0!important}
 #sideNav .side-link:hover,#sideNav .nav-tab:hover{background:#132A33!important}
 
+/* =========================================================
+   LEVECRM V48 — TELA PRINCIPAL CONFORME PRÉVIAS APROVADAS
+   ========================================================= */
+:root{
+  --brand-petrol:#0C1D24;
+  --brand-surface:#132A33;
+  --brand-coral:#FF6B5C;
+  --brand-ice:#E6EEF0;
+  --brand-muted:#8FA9B0;
+  --brand-line:#21424E;
+}
 
-/* LeveCRM v47.1 — versão visível e inequívoca */
-#sideNav .side-version{
-  display:inline-flex!important;
-  align-items:center;
-  justify-content:center;
-  width:max-content;
-  margin-top:6px!important;
-  padding:4px 8px!important;
-  border-radius:999px!important;
-  background:#FF6B5C!important;
-  color:#FFFFFF!important;
-  font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;
-  font-size:10px!important;
-  line-height:1!important;
-  font-weight:800!important;
-  letter-spacing:.08em!important;
-  box-shadow:0 4px 12px rgba(255,107,92,.28)!important;
-  opacity:1!important;
+/* Estrutura geral */
+body.has-sidebar #mainWrap{max-width:none!important;padding:16px!important;min-height:calc(100vh - 76px)!important}
+body.has-sidebar header{min-height:76px!important}
+.h-row1{min-height:76px!important;gap:10px!important}
+.h-wrap{max-width:none!important;padding:0 18px!important}
+#topLogoHome{display:none!important}
+#statusbar,.nav-sep{display:none!important}
+.h-spacer{display:none!important}
+
+.board{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:14px!important;
+  align-items:start!important;
+  background:transparent!important;
 }
-.app-version-badge{
-  display:inline-flex;
-  align-items:center;
-  width:max-content;
-  margin-top:5px;
-  padding:4px 8px;
-  border-radius:999px;
-  background:#FF6B5C;
-  color:#fff;
-  font-size:10px;
-  line-height:1;
-  font-weight:800;
-  letter-spacing:.08em;
-  box-shadow:0 4px 12px rgba(255,107,92,.22);
+.col{
+  border-radius:14px!important;
+  overflow:hidden!important;
+  min-width:0!important;
 }
-body.sidebar-collapsed #sideNav .side-version{display:none!important}
+.col-head{
+  min-height:62px!important;
+  padding:16px 18px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+}
+.col-title-wrap{display:flex;align-items:center;gap:9px;min-width:0}
+.col-head .cname{font-family:Sora,Inter,sans-serif!important;font-size:14px!important;letter-spacing:.02em!important}
+.col-head .cnt{font-size:11px!important;padding:4px 8px!important;min-width:25px;text-align:center}
+.col-menu{appearance:none;border:0;background:transparent;color:var(--muted);font-size:15px;letter-spacing:2px;cursor:pointer;padding:4px}
+.dropzone{padding:10px!important;gap:10px!important;overflow:visible!important;background:transparent!important}
+
+/* Cards iguais à prévia: neutros, espaçosos e com detalhe lateral */
+.card,
+.card.p-top,.card.p-high,.card.p-med,.card.p-low,.card.p-done,.card.p-scheduled{
+  min-height:142px!important;
+  padding:16px 16px 14px 18px!important;
+  border-radius:12px!important;
+  transition:transform .15s ease,box-shadow .15s ease!important;
+}
+.card:hover{transform:translateY(-2px)!important}
+.card::before{width:3px!important;border-radius:12px 0 0 12px!important}
+.card-row1{display:flex!important;grid-template-columns:none!important;align-items:flex-start!important;margin-bottom:7px!important;gap:10px!important}
+.card-nm{font-family:Sora,Inter,sans-serif!important;font-size:15px!important;line-height:1.25!important;padding:0!important;min-width:0}
+.card-prio{font-size:10px!important;padding:5px 9px!important;border-radius:7px!important;text-transform:uppercase!important;letter-spacing:.03em!important}
+.card-detail{font-size:12px!important;font-weight:600!important;margin-bottom:10px!important;padding:0!important}
+.card-contact{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:12px;white-space:nowrap;overflow:hidden}
+.card-phone{overflow:hidden;text-overflow:ellipsis}
+.card-wa-text{position:relative;padding-left:9px}
+.card-wa-text::before{content:'•';position:absolute;left:0}
+.card-row2{display:flex!important;grid-template-columns:none!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;min-height:28px}
+.card-chips{margin-right:auto!important;gap:6px!important}
+.chip{font-size:10px!important;padding:4px 8px!important}
+.wa-btn{width:28px!important;height:28px!important;border-radius:8px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.wa-btn svg{width:16px!important;height:16px!important}
+
+/* Cabeçalho e controles */
+#sideToggleMain{width:48px!important;height:48px!important;border-radius:13px!important;font-size:22px!important}
+.cbox{height:36px!important;padding:0 13px!important;gap:8px!important;font-size:11px!important;text-transform:uppercase!important;letter-spacing:.03em!important}
+.cbox .n{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--brand-coral)!important;color:#fff!important;font-size:10px!important}
+.search-wrap{height:48px!important;border-radius:12px!important;min-width:250px!important}
+.search-wrap input{height:46px!important;font-size:13px!important}
+.btn,#btnNew{height:48px!important;border-radius:12px!important;font-weight:750!important}
+#btnNew{min-width:130px!important}
+
+/* Sidebar */
+#sideNav{width:var(--sidebar-w)!important}
+.side-top{padding:20px 18px 14px!important}
+.side-logo img{width:52px!important;height:52px!important;border-radius:12px!important}
+.side-brand strong{font-family:Sora,Inter,sans-serif!important;font-size:21px!important}
+.side-account-card{margin:8px 14px 16px!important;padding:13px 14px!important;border-radius:12px!important}
+.side-section{padding:0 14px!important}
+.side-section-title{font-size:10px!important;letter-spacing:.11em!important;margin:14px 6px 7px!important}
+#sideNav .nav-tab,#sideNav .side-link{min-height:48px!important;border-radius:10px!important;padding:0 13px!important;font-size:14px!important}
+#sideNav .nav-icon{width:19px!important;height:19px!important}
+
+/* TEMA CLARO */
+body.t-light{background:#E6EEF0!important;color:#0C1D24!important}
+body.t-light #mainWrap,body.t-light .view.active{background:#E6EEF0!important}
+body.t-light header{background:#FFFFFF!important;border-color:#D7E2E5!important;box-shadow:0 4px 18px rgba(12,29,36,.06)!important}
+body.t-light #sideNav{background:#FFFFFF!important;border-right:1px solid #D7E2E5!important}
+body.t-light #sideNav .side-brand strong,body.t-light #sideNav .side-brand small,body.t-light #sideNav .side-version,
+body.t-light #sideNav .side-section-title,body.t-light #sideNav .side-link,body.t-light #sideNav .nav-tab{color:#0C1D24!important}
+body.t-light #sideNav .side-section-title{color:#78919A!important}
+body.t-light .side-account-card{background:#F4F7F8!important;border-color:#D7E2E5!important;color:#0C1D24!important}
+body.t-light #sideNav .nav-tab:hover,body.t-light #sideNav .side-link:hover{background:#F3F6F7!important}
+body.t-light #sideNav .nav-tab.active{background:#FF6B5C!important;color:#fff!important}
+body.t-light .col{background:#FFFFFF!important;border:1px solid #D7E2E5!important;box-shadow:0 7px 22px rgba(12,29,36,.05)!important}
+body.t-light .col-head{background:#FFFFFF!important;border-color:#E0E8EA!important;color:#0C1D24!important}
+body.t-light .col-head .cnt{background:#FFF0ED!important;color:#D94D40!important}
+body.t-light .card,body.t-light .card.p-top,body.t-light .card.p-high,body.t-light .card.p-med,body.t-light .card.p-low,body.t-light .card.p-done,body.t-light .card.p-scheduled{
+  background:#FFFFFF!important;color:#0C1D24!important;border:1px solid #D7E2E5!important;box-shadow:0 3px 12px rgba(12,29,36,.06)!important
+}
+body.t-light .card-nm{color:#0C1D24!important}
+body.t-light .card-detail,body.t-light .card-contact{color:#6F8790!important}
+body.t-light .card-prio{background:#F4F7F8!important;color:#58717B!important;border-color:#D7E2E5!important}
+body.t-light .prio-top,body.t-light .prio-high{background:#FFF1EE!important;color:#D94D40!important;border-color:#FFB9B1!important}
+body.t-light .cbox,body.t-light .search-wrap,body.t-light .btn:not(#btnNew){background:#FFFFFF!important;color:#0C1D24!important;border-color:#D7E2E5!important}
+body.t-light #sideToggleMain{background:#FFFFFF!important;color:#0C1D24!important;border:1px solid #D7E2E5!important}
+body.t-light .card.p-top::before,body.t-light .card.p-high::before{background:#FF6B5C!important}
+body.t-light .card.p-med::before{background:#5A8BA0!important}
+body.t-light .card.p-low::before{background:#A9BAC0!important}
+
+/* TEMA ESCURO — petróleo, nunca preto */
+body.t-dark{background:#0C1D24!important;color:#E6EEF0!important}
+body.t-dark #mainWrap,body.t-dark .view.active{background:#0C1D24!important}
+body.t-dark header{background:#0F252E!important;border-color:#21424E!important;box-shadow:none!important}
+body.t-dark #sideNav{background:#0F252E!important;border-right:1px solid #21424E!important}
+body.t-dark .side-account-card{background:#132A33!important;border-color:#21424E!important}
+body.t-dark #sideNav .nav-tab:hover,body.t-dark #sideNav .side-link:hover{background:#132A33!important}
+body.t-dark #sideNav .nav-tab.active{background:#FF6B5C!important;color:#fff!important}
+body.t-dark .col{background:#10262F!important;border:1px solid #21424E!important;box-shadow:none!important}
+body.t-dark .col-head{background:#10262F!important;border-color:#21424E!important;color:#E6EEF0!important}
+body.t-dark .col-head .cnt{background:#FF6B5C!important;color:#fff!important}
+body.t-dark .card,body.t-dark .card.p-top,body.t-dark .card.p-high,body.t-dark .card.p-med,body.t-dark .card.p-low,body.t-dark .card.p-done,body.t-dark .card.p-scheduled{
+  background:#132A33!important;color:#E6EEF0!important;border:1px solid #21424E!important;box-shadow:0 4px 12px rgba(3,13,17,.18)!important
+}
+body.t-dark .card-nm{color:#E6EEF0!important}
+body.t-dark .card-detail,body.t-dark .card-contact{color:#8FA9B0!important}
+body.t-dark .card-prio{background:#17343E!important;color:#BBD0D6!important;border-color:#315762!important}
+body.t-dark .prio-top,body.t-dark .prio-high{background:#3B2525!important;color:#FF9B91!important;border-color:#71413D!important}
+body.t-dark .cbox,body.t-dark .search-wrap,body.t-dark .btn:not(#btnNew){background:#132A33!important;color:#E6EEF0!important;border-color:#21424E!important}
+body.t-dark #sideToggleMain{background:#132A33!important;color:#E6EEF0!important;border:1px solid #21424E!important}
+body.t-dark .card.p-top::before,body.t-dark .card.p-high::before{background:#FF6B5C!important}
+body.t-dark .card.p-med::before{background:#5F94A8!important}
+body.t-dark .card.p-low::before{background:#78939D!important}
+
+/* Ações */
+#btnNew,#btnNewMobile,.btn-accent,.btn-primary,.primary-action{background:#FF6B5C!important;border-color:#E4574B!important;color:#fff!important;box-shadow:0 7px 18px rgba(255,107,92,.18)!important}
+
+/* Desktop mantém quatro colunas até largura útil menor */
+@media (min-width:1180px){.board{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+@media (max-width:1179px) and (min-width:761px){.board{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:760px){
+  body.has-sidebar #mainWrap{padding:8px!important}
+  .board{grid-template-columns:1fr!important}
+  .card{min-height:auto!important}
+}
