@@ -64,6 +64,17 @@ alter table public.agenda_eventos
 create index if not exists agenda_eventos_lead_id_idx
   on public.agenda_eventos (lead_id);
 
+-- ============================================================================
+-- 3) COLUNAS faltantes em leads (campos novos que o "Salvar" envia).
+--    Sem elas o save quebra com PGRST204 "Could not find the ... column".
+-- ============================================================================
+alter table public.leads add column if not exists data_fechamento     timestamptz;
+alter table public.leads add column if not exists ultima_interacao_em timestamptz;
+alter table public.leads add column if not exists ultimo_falante       text;
+alter table public.leads add column if not exists proxima_acao_de      text;
+alter table public.leads add column if not exists etapa_comercial      text;
+alter table public.leads add column if not exists nivel_interesse      text;
+
 commit;
 
 -- Recarrega o cache de schema do PostgREST para refletir as mudanças na hora.
