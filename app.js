@@ -27,9 +27,9 @@ let aiExtracted = {nome:'',fone:'',emp:'',obs:''};
    A segurança real fica nas políticas RLS (Row Level Security) do banco —
    cada usuário só acessa os próprios registros via auth.uid().
 ══════════════════════════════════════ */
-const SB_URL='https://lnrbpiklzymblpyrobwx.supabase.co';
+const SB_URL='https://hoxngbfukvbhvmzmptqn.supabase.co';
 window.SB_URL=SB_URL;
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucmJwaWtsenltYmxweXJvYnd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjY0MjcsImV4cCI6MjA4NjQwMjQyN30.ybNh5WhAPWgAMW3gLKrxCGFfIl_9oH31Ajv8qqjtelo';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhveG5nYmZ1a3ZiaHZtem1wdHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMzk4MjAsImV4cCI6MjA5ODkxNTgyMH0.h1z3OQqG9L4Jn9pBmq9X3AUmSNByRKCQ2-KEaQcgmqU';
 const TBL='leads';
 const ATT_TBL='lead_attachments';
 window.SB_KEY=SB_KEY;
