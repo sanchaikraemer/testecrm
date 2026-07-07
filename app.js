@@ -12,7 +12,6 @@ let editingId = null;
 let origSnap = null;
 let SELECTED_LEAD_ID = null;
 const NOTIFICATION_TIMERS = new Map();
-const ALL_THEMES = ['t-navy','t-light','t-dark','t-direciona'];
 const dlg = document.getElementById('dlg');
 const leadForm = document.getElementById('leadForm');
 let aiImgB64 = null;
@@ -39,7 +38,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=53';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=54';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -526,7 +525,7 @@ function cardHTML(l){
     </div>`;}
 
   if(isPerd){
-    const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#9AA8AF">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
+    const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#9A9CA3">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
     return`<div class="card ${pv.cls}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
       <div class="card-row1"><div class="card-nm" style="padding-left:6px" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div></div>
       <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}</div>${mot}
@@ -763,7 +762,7 @@ function openNew(){
   F('origem').value=LISTS.origem[0]||'';F('responsavel').value=LISTS.responsavel[0]||'Corretor';
   F('visita').value='Não';F('motivo_perda').value='';F('observacao').value='';
   toggleMotivo();document.getElementById('attachList').innerHTML='';document.getElementById('attachHint').textContent=' Salve o lead primeiro.';document.getElementById('attachBtn').disabled=true;
-  if(document.getElementById('historyLog')) document.getElementById('historyLog').innerHTML='<div style="font-size:11px;color:#9AA8AF;padding:4px">Salve o lead para ver o histórico.</div>';
+  if(document.getElementById('historyLog')) document.getElementById('historyLog').innerHTML='<div style="font-size:11px;color:#9A9CA3;padding:4px">Salve o lead para ver o histórico.</div>';
   origSnap=formSnap();dlg.showModal();
 }
 
@@ -803,7 +802,7 @@ function renderDashboard(){
   const overdue=getOverdue();
   const counts=Object.fromEntries(LISTS.etapa.map(etapa=>[etapa,active.filter(l=>normEtapa(l.etapa)===etapa).length]));
   const funnel=[...LISTS.etapa];
-  const fColors=['#B9FF00','#10D5D5','#6EA000','#3D555C'];
+  const fColors=['#B9FF00','#10D5D5','#6EA000','#3D3F45'];
   const fCounts=funnel.map(e=>counts[e]||0);
   const maxF=Math.max(...fCounts,1);
 
@@ -1304,7 +1303,7 @@ function updateAgendaBadge(){
     b.style.display='inline-flex';
     b.textContent=c;
     b.title = c===1 ? '1 compromisso hoje' : `${c} compromissos hoje`;
-    b.style.background = c>0 ? '#FF5D5D' : '#3D555C';
+    b.style.background = c>0 ? '#FF5D5D' : '#3D3F45';
   });
 }
 
@@ -1521,18 +1520,8 @@ async function importCSV(text){
   render();showToast(`${saved} lead(s) importado(s).`,2400);
   alert(`Importação concluída.\nSalvos: ${saved}\nFalhas: ${failed}`);
 }
-function applyTheme(t){
-  const theme=ALL_THEMES.includes(t)?t:'t-light';
-  document.body.classList.remove(...ALL_THEMES);
-  document.body.classList.add(theme);
-  document.querySelectorAll('.theme-opt').forEach(o=>o.classList.toggle('active',o.dataset.theme===theme));
-  const lbl={'t-navy':'Azul','t-light':'Claro','t-dark':'Escuro','t-direciona':'Direciona'};
-  const themeToggle=document.getElementById('themeToggle');
-  if(themeToggle) themeToggle.textContent=(lbl[theme]||'Tema')+' ▾';
-  const sideTheme=document.getElementById('sideThemeCurrent');
-  if(sideTheme) sideTheme.textContent=(lbl[theme]||'Tema');
-  lsSet('crm_theme',theme);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#070B0D');
+function applyBrandIdentity(){
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#0A0A0B');
   setupPWA();
 }
 
@@ -1586,7 +1575,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=53');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=54');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1619,11 +1608,7 @@ function bindEl(id, eventName, handler, opts){
   if(el) el.addEventListener(eventName, handler, opts);
 }
 
-// Theme
-bindEl('themeToggle','click',e=>{e.stopPropagation();document.getElementById('themeWrap').classList.toggle('open');});
-bindEl('themeMenu','click',e=>{const o=e.target.closest('[data-theme]');if(!o)return;applyTheme(o.dataset.theme);document.getElementById('themeWrap').classList.remove('open');});
 document.addEventListener('click',e=>{
-  if(!document.getElementById('themeWrap').contains(e.target))document.getElementById('themeWrap').classList.remove('open');
   const mw=document.getElementById('moreWrap'); if(mw && !mw.contains(e.target)) mw.classList.remove('open');
 });
 
@@ -1633,18 +1618,9 @@ const agendaTop=document.getElementById('agendaTabBtn'); if(agendaTop) agendaTop
 const agendaSide=document.getElementById('agendaTabBtnSide'); if(agendaSide) agendaSide.addEventListener('click',openAgenda);
 const lateSide=document.getElementById('lateSafeBtn'); if(lateSide) lateSide.addEventListener('click',openLate);
 function syncSidebarUtilityState(){
-  const themeMap={'t-light':'Claro','t-dark':'Escuro','t-navy':'Azul','t-direciona':'Direciona'};
-  const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
-  const themeEl=document.getElementById('sideThemeCurrent');if(themeEl)themeEl.textContent=themeMap[current]||'Claro';
   const rawName=String(ACCESS_USER?.nome||ACCESS_USER?.name||ACCESS_USER?.displayName||'').trim();
   const nameEl=document.getElementById('sideAccountName');if(nameEl)nameEl.textContent=rawName||'Não conectado';
   const installBtn=document.getElementById('sideInstallApp');if(installBtn)installBtn.style.display=document.body.classList.contains('app-installed')?'none':'flex';
-}
-function cycleSidebarTheme(){
-  const order=['t-light','t-dark','t-navy','t-direciona'];
-  const current=lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light';
-  const next=order[(order.indexOf(current)+1)%order.length];
-  applyTheme(next);
 }
 const sideToggleMain=document.getElementById('sideToggleMain'); if(sideToggleMain) sideToggleMain.addEventListener('click',()=>toggleSidebar());
 const sideToggleNav=document.getElementById('sideToggleNav'); if(sideToggleNav) sideToggleNav.addEventListener('click',()=>toggleSidebar());
@@ -1652,7 +1628,6 @@ const sideLogo=document.getElementById('sideLogoHome'); if(sideLogo) sideLogo.ad
 const topLogo=document.getElementById('topLogoHome'); if(topLogo){ topLogo.addEventListener('click',goHomeFromLogo); topLogo.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHomeFromLogo();}}); }
 const sideImportPrint=document.getElementById('sideImportPrint'); if(sideImportPrint) sideImportPrint.addEventListener('click',()=>document.getElementById('btnAiImport')?.click());
 const sideInstallApp=document.getElementById('sideInstallApp'); if(sideInstallApp) sideInstallApp.addEventListener('click',()=>document.getElementById('btnInstallApp')?.click());
-const sideThemeBtn=document.getElementById('sideThemeBtn'); if(sideThemeBtn) sideThemeBtn.addEventListener('click',cycleSidebarTheme);
 const sideLogoutBtn=document.getElementById('sideLogoutBtn'); if(sideLogoutBtn) sideLogoutBtn.addEventListener('click',()=>document.getElementById('btnLogoutAccess')?.click());
 syncSidebarUtilityState();
 const sideBackdrop=document.getElementById('sideBackdrop'); if(sideBackdrop) sideBackdrop.addEventListener('click',()=>toggleSidebar(false));
@@ -1840,9 +1815,8 @@ function initApp(){
   installVoiceRecognition();
   normalizeStaticUi();
   updateLateBadge();
-  setupPWA();
   registerSW();
-  applyTheme(lsGet('crm_theme')||localStorage.getItem('crm_theme')||'t-light');
+  applyBrandIdentity();
   updateInstallBtn();
   setInterval(()=>{document.querySelectorAll('.card').forEach(c=>{const id=c.dataset.id;const l=ALL.find(x=>x.id===id);if(!l)return;const nc=nextContact(l);const ncEl=c.querySelector('.chip-nc-neutral,.chip-nc-green,.chip-nc-red');if(ncEl&&nc){ncEl.className=`chip ${nc.cls}`;ncEl.textContent=nc.text;}});},60000);
   setInterval(updateAgendaBadge,60000);

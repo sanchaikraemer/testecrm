@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="LeveCRM">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#141F26"/>
-      <stop offset="1" stop-color="#0A1116"/>
+      <stop offset="0" stop-color="#1B1C1F"/>
+      <stop offset="1" stop-color="#0B0B0C"/>
     </linearGradient>
   </defs>
   <rect x="12" y="12" width="232" height="232" rx="50" fill="url(#bg)" stroke="#B9FF00" stroke-opacity=".3" stroke-width="3"/>
-  <path d="M55 100L128 46l73 54" fill="none" stroke="#F5F7FA" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M55 100L128 46l73 54" fill="none" stroke="#F5F5F6" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
   <rect x="62" y="139" width="23" height="54" rx="5" fill="#B9FF00"/>
   <rect x="101" y="113" width="23" height="80" rx="5" fill="#B9FF00"/>
   <rect x="140" y="84" width="23" height="109" rx="5" fill="#B9FF00"/>

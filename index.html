@@ -31,10 +31,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#070B0D"/>
+<meta name="theme-color" content="#0A0A0B"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="53"/>
+<meta name="application-version" content="54"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -89,7 +89,7 @@
 
 
 
-<link rel="stylesheet" href="./styles.css?v=53"/>
+<link rel="stylesheet" href="./styles.css?v=54"/>
 </head>
 <body class="t-navy has-sidebar">
 
@@ -99,7 +99,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v53</span></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span></strong><small>Corretores de imóveis</small><span class="side-version">v54</span></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -127,7 +127,6 @@
       <div class="side-list">
         <button class="side-link" id="sideImportPrint"><span class="ic"><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M18 8v6M15 11h6"/></svg></span><span class="txt">Importar contato</span></button>
         <button class="side-link" id="sideInstallApp"><span class="ic"><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 6h2M11 18h2"/></svg></span><span class="txt">Instalar app</span></button>
-        <button class="side-link" id="sideThemeBtn"><span class="ic"><svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg></span><span class="txt">Tema</span><span class="meta" id="sideThemeCurrent">Claro</span></button>
       </div>
     </div>
     <div class="side-section">
@@ -168,14 +167,6 @@
 <div class="nav-sep"></div>
       <div class="h-spacer"></div>
       <div class="header-actions" aria-hidden="true" style="display:none !important">
-        <div class="theme-wrap" id="themeWrap">
-          <button class="btn" id="themeToggle">Claro ▾</button>
-          <div class="theme-menu" id="themeMenu">
-            <button class="theme-opt" data-theme="t-navy">Azul</button>
-            <button class="theme-opt active" data-theme="t-light">Claro</button>
-            <button class="theme-opt" data-theme="t-dark">Escuro</button>
-          </div>
-        </div>
         <button class="btn" id="btnAiImport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 3l1.8 4.4L18 9l-4.2 1.6L12 15l-1.8-4.4L6 9l4.2-1.6z"/><path d="M19 14l.9 2.2L22 17l-2.1.8L19 20l-.9-2.2L16 17l2.1-.8z"/></svg>Importar contato</button>
         <button class="btn btn-gold" id="btnInstallApp" title="Instalar app" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 6h2M11 18h2"/></svg>Instalar app</button>
         <span class="user-pill" id="whoPill"><span class="dot ok"></span></span>
@@ -823,7 +814,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./app.js?v=53"></script>
+<script src="./app.js?v=54"></script>
 
 </body>
 </html>
