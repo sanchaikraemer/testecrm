@@ -33,15 +33,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #185FA5;
-      --primary-dark: #0d4478;
-      --primary-light: #eaf2fb;
-      --bg-app: #f8f9fa;
-      --bg-panel: #ffffff;
-      --bg-preview: #f0f2f5;
+      /* Documento impresso: mantém tons legíveis em papel branco */
+      --primary: #4d7300;
+      --primary-dark: #35510a;
+      --primary-light: #eef7d9;
+      --bg-app: #070B0D;
+      --bg-panel: #111E24;
+      --bg-preview: #15262B;
       --text-main: #1a1a1a;
       --text-muted: #6c757d;
-      --border: #dee2e6;
+      --border: #263A3F;
       --success: #28a745;
       --warning: #ffc107;
       --danger: #dc3545;
@@ -51,6 +52,17 @@
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
+    }
+
+    /* Chrome do app (barra lateral): identidade premium escura/verde-lima.
+       O papel da proposta (.proposal-paper) continua branco/impresso. */
+    .sidebar {
+      --primary: #B9FF00;
+      --primary-dark: #6EA000;
+      --primary-light: rgba(185,255,0,.14);
+      --text-main: #F5F7FA;
+      --text-muted: #9AA8AF;
+      --border: #263A3F;
     }
 
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
@@ -84,13 +96,13 @@
     .sidebar-header {
       padding: 18px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(to right, #fff, #f8f9fa);
+      background: linear-gradient(to right, #0F1619, #0A1116);
     }
 
     .sidebar-header h1 {
       font-size: 18px;
       margin: 0;
-      color: var(--primary-dark);
+      color: var(--text-main);
       font-weight: 800;
       display: flex;
       align-items: center;
@@ -112,7 +124,7 @@
     .sidebar-footer {
       padding: 14px;
       border-top: 1px solid var(--border);
-      background: #f8f9fa;
+      background: #0F1619;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
@@ -121,7 +133,7 @@
     /* Form Elements */
     .form-section {
       margin-bottom: 16px;
-      background: #fff;
+      background: #111E24;
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 12px;
@@ -156,7 +168,7 @@
       font-size: 11px;
       font-weight: 600;
       margin-bottom: 4px;
-      color: #444;
+      color: var(--text-muted, #444);
     }
 
     input, select, textarea {
@@ -213,7 +225,7 @@
       height: 32px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
-      background: #fff;
+      background: #111E24;
       color: var(--danger);
       cursor: pointer;
       display: flex;
@@ -224,14 +236,14 @@
     }
 
     .btn-icon:hover {
-      background: #fff5f5;
-      border-color: #feb2b2;
+      background: rgba(255,93,93,.12);
+      border-color: rgba(255,93,93,.4);
     }
 
     .btn-add {
       width: 100%;
       padding: 6px;
-      background: #fff;
+      background: #111E24;
       border: 1px dashed var(--primary);
       color: var(--primary);
       border-radius: var(--radius-sm);
@@ -266,6 +278,10 @@
       color: #fff;
     }
 
+    .sidebar .btn-primary {
+      color: #08110A;
+    }
+
     .btn-primary:hover {
       background: var(--primary-dark);
       transform: translateY(-1px);
@@ -279,8 +295,8 @@
       font-size: 11px;
     }
 
-    .btn-outline:hover {
-      background: #f8f9fa;
+    .sidebar .btn-outline:hover {
+      background: #15262B;
       color: var(--text-main);
     }
 
@@ -649,14 +665,14 @@
   </style>
 
 <style>
-.proposal-history-panel{border-top:1px solid var(--border);padding-bottom:110px}.proposal-history-item{width:100%;display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:9px;margin-bottom:6px;cursor:pointer}.proposal-history-item strong{font-size:11px;color:var(--primary)}.proposal-history-item span,.proposal-history-empty,.proposal-save-status{font-size:10px;color:var(--text-muted)}.proposal-save-status{padding:6px 2px}.proposal-history-empty{padding:8px 0}@media print{.sidebar{display:none!important}.preview-area{margin:0!important}.proposal-paper{box-shadow:none!important}.proposal-history-panel{display:none!important}}
+.proposal-history-panel{border-top:1px solid var(--border);padding-bottom:110px}.proposal-history-item{width:100%;display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--border);background:#111E24;border-radius:8px;padding:9px;margin-bottom:6px;cursor:pointer}.proposal-history-item strong{font-size:11px;color:var(--primary)}.proposal-history-item span,.proposal-history-empty,.proposal-save-status{font-size:10px;color:var(--text-muted)}.proposal-save-status{padding:6px 2px}.proposal-history-empty{padding:8px 0}@media print{.sidebar{display:none!important}.preview-area{margin:0!important}.proposal-paper{box-shadow:none!important}.proposal-history-panel{display:none!important}}
 </style>
 </head>
 <body>
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>leve<span style="color:#D7AF42">crm</span></h1>
+        <h1>leve<span style="color:#B9FF00">crm</span></h1>
         <p>Gerador de Propostas LeveCRM</p>
       </div>
       
@@ -915,7 +931,7 @@
     </main>
   </div>
 
-  <script src="./propostas.js?v=51"></script>
+  <script src="./propostas.js?v=53"></script>
 
 </body>
 </html>

@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="LeveCRM">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#132A33"/>
-      <stop offset="1" stop-color="#0C1D24"/>
+      <stop offset="0" stop-color="#141F26"/>
+      <stop offset="1" stop-color="#0A1116"/>
     </linearGradient>
   </defs>
-  <rect x="12" y="12" width="232" height="232" rx="50" fill="url(#bg)"/>
-  <path d="M55 100L128 46l73 54" fill="none" stroke="#E6EEF0" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="62" y="139" width="23" height="54" rx="5" fill="#E6EEF0"/>
-  <rect x="101" y="113" width="23" height="80" rx="5" fill="#E6EEF0"/>
-  <rect x="140" y="84" width="23" height="109" rx="5" fill="#E6EEF0"/>
-  <path d="M194 193a44 44 0 1 1 0-88v44h44a44 44 0 0 1-44 44z" fill="#FF6B5C"/>
-  <path d="M199 100a49 49 0 0 1 49 49h-49z" fill="#8FA9B0"/>
+  <rect x="12" y="12" width="232" height="232" rx="50" fill="url(#bg)" stroke="#B9FF00" stroke-opacity=".3" stroke-width="3"/>
+  <path d="M55 100L128 46l73 54" fill="none" stroke="#F5F7FA" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="62" y="139" width="23" height="54" rx="5" fill="#B9FF00"/>
+  <rect x="101" y="113" width="23" height="80" rx="5" fill="#B9FF00"/>
+  <rect x="140" y="84" width="23" height="109" rx="5" fill="#B9FF00"/>
+  <path d="M194 193a44 44 0 1 1 0-88v44h44a44 44 0 0 1-44 44z" fill="#B9FF00"/>
+  <path d="M199 100a49 49 0 0 1 49 49h-49z" fill="#10D5D5"/>
 </svg>

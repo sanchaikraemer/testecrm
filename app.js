@@ -39,7 +39,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=51';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=53';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -326,7 +326,7 @@ async function loadAccessAdmin(){
     listNow.innerHTML=`
       <div class="adm-item">
         <div style="flex:1;min-width:0">
-          <div class="adm-item-name">${escH(ACCESS_USER.nome)} <span class="chip" style="background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE">ADMIN</span></div>
+          <div class="adm-item-name">${escH(ACCESS_USER.nome)} <span class="chip" style="background:rgba(185,255,0,.14);color:#B9FF00;border-color:rgba(185,255,0,.35)">ADMIN</span></div>
           <div class="adm-item-detail">
             E-mail: <b>${escH(ACCESS_USER.email||'')}</b><br>
             Status atual: <b>${escH(check?.ok ? (check.kind==='trial'?'Teste ativo':'Licença ativa') : 'Bloqueado/expirado')}</b><br>
@@ -526,7 +526,7 @@ function cardHTML(l){
     </div>`;}
 
   if(isPerd){
-    const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#64748B">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
+    const mot=l.motivo_perda?`<div style="margin-top:5px;font-size:11px;color:#9AA8AF">Motivo: <b>${escH(l.motivo_perda)}</b></div>`:'';
     return`<div class="card ${pv.cls}${wasTouchedToday(l)?' touched-today':''}" draggable="true" data-id="${l.id}">
       <div class="card-row1"><div class="card-nm" style="padding-left:6px" title="${escH(l.nome)}">${escH(shortLeadName(l.nome,28))}</div></div>
       <div class="card-row2"><div class="card-chips"><div class="card-emp">${escH(l.empreendimento||'—')}</div>${ncHTML}${attHTML}</div>${wa}</div>${mot}
@@ -763,7 +763,7 @@ function openNew(){
   F('origem').value=LISTS.origem[0]||'';F('responsavel').value=LISTS.responsavel[0]||'Corretor';
   F('visita').value='Não';F('motivo_perda').value='';F('observacao').value='';
   toggleMotivo();document.getElementById('attachList').innerHTML='';document.getElementById('attachHint').textContent=' Salve o lead primeiro.';document.getElementById('attachBtn').disabled=true;
-  if(document.getElementById('historyLog')) document.getElementById('historyLog').innerHTML='<div style="font-size:11px;color:#94A3B8;padding:4px">Salve o lead para ver o histórico.</div>';
+  if(document.getElementById('historyLog')) document.getElementById('historyLog').innerHTML='<div style="font-size:11px;color:#9AA8AF;padding:4px">Salve o lead para ver o histórico.</div>';
   origSnap=formSnap();dlg.showModal();
 }
 
@@ -803,7 +803,7 @@ function renderDashboard(){
   const overdue=getOverdue();
   const counts=Object.fromEntries(LISTS.etapa.map(etapa=>[etapa,active.filter(l=>normEtapa(l.etapa)===etapa).length]));
   const funnel=[...LISTS.etapa];
-  const fColors=['#D4AF37','#2B5EA7','#4A90D9','#8A9BB0'];
+  const fColors=['#B9FF00','#10D5D5','#6EA000','#3D555C'];
   const fCounts=funnel.map(e=>counts[e]||0);
   const maxF=Math.max(...fCounts,1);
 
@@ -1020,7 +1020,7 @@ function openQuickLead(){
 function closeQuickLead(){document.getElementById('qlModal').classList.remove('open');}
 async function saveQuickLead(){
   const nome=document.getElementById('qlNome').value.trim();
-  if(!nome){document.getElementById('qlNome').style.borderColor='#EF4444';setTimeout(()=>document.getElementById('qlNome').style.borderColor='',1500);return;}
+  if(!nome){document.getElementById('qlNome').style.borderColor='#FF5D5D';setTimeout(()=>document.getElementById('qlNome').style.borderColor='',1500);return;}
   const fone=document.getElementById('qlFone').value.trim();
   const prioridade=document.getElementById('qlPrioridade').value||'Baixa';
   const btn=document.getElementById('qlSaveBtn');const txt=document.getElementById('qlSaveTxt');
@@ -1304,7 +1304,7 @@ function updateAgendaBadge(){
     b.style.display='inline-flex';
     b.textContent=c;
     b.title = c===1 ? '1 compromisso hoje' : `${c} compromissos hoje`;
-    b.style.background = c>0 ? '#EF4444' : '#94A3B8';
+    b.style.background = c>0 ? '#FF5D5D' : '#3D555C';
   });
 }
 
@@ -1335,14 +1335,14 @@ function renderAdmin(tab){
   if(tab==='responsaveis'){
     const items=getAdminResp();const el=document.getElementById('listResp');
     el.innerHTML=items.length?items.map((it,i)=>{const nome=it.nome||it;const leadsAtivos=ALL.filter(l=>l.responsavel===nome&&normEtapa(l.etapa)!=='PERDIDO').length;
-      return`<div class="adm-item"><div class="adm-item-name">👤 ${escH(nome)}</div><div class="adm-item-detail">${it.fone?escH(it.fone)+' · ':''}${it.creci?'CRECI:'+escH(it.creci)+' · ':''}<span style="color:#D4AF37">${leadsAtivos} leads</span></div><button class="adm-del" onclick="removeResp(${i})">✕</button></div>`;
+      return`<div class="adm-item"><div class="adm-item-name">👤 ${escH(nome)}</div><div class="adm-item-detail">${it.fone?escH(it.fone)+' · ':''}${it.creci?'CRECI:'+escH(it.creci)+' · ':''}<span style="color:#B9FF00">${leadsAtivos} leads</span></div><button class="adm-del" onclick="removeResp(${i})">✕</button></div>`;
     }).join(''):'<div style="font-size:12px;color:var(--muted);padding:8px">Nenhum cadastrado.</div>';
   }
   if(tab==='imoveis'){
     const items=getAdminEmps();const el=document.getElementById('listEmp');
-    const sc={'Disponível':'#16A34A','Lançamento':'#D4AF37','Em obras':'#E67E22','Entregue':'#4A90D9','Esgotado':'#D64545'};
+    const sc={'Disponível':'#77E69A','Lançamento':'#B9FF00','Em obras':'#FFB020','Entregue':'#10D5D5','Esgotado':'#FF5D5D'};
     el.innerHTML=items.length?items.map((it,i)=>{const nome=it.nome||it;const c=ALL.filter(l=>l.empreendimento===nome).length;
-      return`<div class="adm-item"><div class="adm-item-name">🏠 ${escH(nome)}</div><div class="adm-item-detail">${it.tipo?`<span style="background:rgba(74,144,217,.15);color:#4A90D9;padding:1px 7px;border-radius:999px;font-size:10px">${escH(it.tipo)}</span> `:''}${it.valor?escH(it.valor)+' · ':''}<span style="color:${sc[it.status]||'#16A34A'}">${escH(it.status||'Disponível')}</span>${c?' · '+c+' leads':''}</div><button class="adm-del" onclick="removeEmp(${i})">✕</button></div>`;
+      return`<div class="adm-item"><div class="adm-item-name">🏠 ${escH(nome)}</div><div class="adm-item-detail">${it.tipo?`<span style="background:rgba(16,213,213,.14);color:#10D5D5;padding:1px 7px;border-radius:999px;font-size:10px">${escH(it.tipo)}</span> `:''}${it.valor?escH(it.valor)+' · ':''}<span style="color:${sc[it.status]||'#77E69A'}">${escH(it.status||'Disponível')}</span>${c?' · '+c+' leads':''}</div><button class="adm-del" onclick="removeEmp(${i})">✕</button></div>`;
     }).join(''):'<div style="font-size:12px;color:var(--muted);padding:8px">Nenhum cadastrado.</div>';
   }
   if(tab==='origens'){
@@ -1532,8 +1532,7 @@ function applyTheme(t){
   const sideTheme=document.getElementById('sideThemeCurrent');
   if(sideTheme) sideTheme.textContent=(lbl[theme]||'Tema');
   lsSet('crm_theme',theme);
-  const themeColors={'t-light':'#F5F7FA','t-dark':'#08090C','t-direciona':'#0C1D24'};
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeColors[theme]||'#082248');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#070B0D');
   setupPWA();
 }
 
@@ -1587,7 +1586,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=51');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=53');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{

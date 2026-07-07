@@ -119,7 +119,7 @@ function saveProposal(){
   setProposalStatus('Salvando…');
   parent.postMessage({type:'LEVECRM_PROPOSAL_SAVE',payload:collectPayload()},location.protocol==='file:'?'*':location.origin);
 }
-function setProposalStatus(message,error=false){const el=$('proposal-save-status');el.textContent=message||'';el.style.color=error?'#b91c1c':'#496070';}
+function setProposalStatus(message,error=false){const el=$('proposal-save-status');el.textContent=message||'';el.style.color=error?'#FF5D5D':'#9AA8AF';}
 function clearForm(confirmFirst=true){
   if(confirmFirst&&!confirm('Deseja limpar todos os campos?'))return;
   document.querySelectorAll('.sidebar input,.sidebar textarea').forEach(el=>el.value='');
