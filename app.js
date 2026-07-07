@@ -38,7 +38,7 @@ const PROPOSAL_TBL='proposals';
 const AI_TBL='ai_analyses';
 const PUSH_TBL='push_subscriptions';
 const ACCESS_SESSION_KEY='levecrm_access_session_v1';
-const INITIAL_LEADS_URL='./leads-iniciais.json?v=54';
+const INITIAL_LEADS_URL='./leads-iniciais.json?v=55';
 const INITIAL_IMPORT_MARKER='__LEADS_V43_IMPORTED__';
 
 /* ══════════════════════════════════════
@@ -1575,7 +1575,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=54');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=55');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{

@@ -3272,13 +3272,18 @@ body.sidebar-collapsed #sideNav {
   color: #9A9CA3
 }
 #sideNav .side-version {
-  display: block;
-  font-size: 9px;
-  color: #6B6D73;
-  letter-spacing: .06em;
-  margin-top: 2px;
-  font-weight: 600;
-  font-family: monospace
+  display: inline-block;
+  font-size: 10px;
+  color: #08110A;
+  background: #B9FF00;
+  letter-spacing: .04em;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-family: monospace;
+  vertical-align: middle;
+  text-transform: uppercase
 }
 #sideToggleNav {
   border: 1px solid #2C2D32;

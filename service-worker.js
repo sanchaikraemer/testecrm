@@ -1,7 +1,7 @@
-const CACHE='levecrm-v54';
+const CACHE='levecrm-v55';
 const CORE=[
-  './','./index.html','./propostas.html','./styles.css?v=54','./app.js?v=54','./propostas.js?v=54',
-  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=54'
+  './','./index.html','./propostas.html','./styles.css?v=55','./app.js?v=55','./propostas.js?v=55',
+  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=55'
 ];
 
 self.addEventListener('install',event=>{
