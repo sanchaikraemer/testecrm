@@ -1,4 +1,4 @@
-const CACHE='levecrm-v64-direciona-ai-pro';
+const CACHE='levecrm-v65-direciona-ai-pro';
 const SHARE_CACHE='direciona-sharetarget-stable';
 const ZIP_KEYS=['/__direciona_shared_zip__','./__direciona_shared_zip__','__direciona_shared_zip__'];
 const CORE=[

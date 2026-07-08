@@ -1,5 +1,5 @@
 // API opcional para deploy em Vercel/Node.
-// Recebe {model, temperature, max_tokens, messages} e repassa para a OpenAI,
+// Recebe {model, max_tokens, messages} e repassa para a OpenAI,
 // devolvendo a resposta no mesmo formato do Chat Completions.
 // Configure OPENAI_API_KEY no ambiente do deploy.
 export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
@@ -37,19 +37,20 @@ export default async function handler(req, res){
     const isReasoningModel = /^gpt-5|^o[0-9]/i.test(model);
     const reasoningEffort = body.reasoning_effort || body.reasoning?.effort || (
       stage.includes('diagnostico') || stage.includes('diagnóstico')
-        ? (process.env.OPENAI_REASONING_DIAGNOSTICO || 'xhigh')
+        ? (process.env.OPENAI_REASONING_DIAGNOSTICO || 'high')
         : (process.env.OPENAI_REASONING_RESPOSTAS || 'high')
     );
 
     const payload = {
       model,
-      temperature: body.temperature ?? 0.32,
       max_completion_tokens: body.max_completion_tokens || body.max_tokens || 2600,
       response_format: body.response_format || { type: 'json_object' },
       messages: body.messages
     };
-    if(isReasoningModel && reasoningEffort && reasoningEffort !== 'none'){
-      payload.reasoning_effort = reasoningEffort;
+    if(isReasoningModel){
+      if(reasoningEffort && reasoningEffort !== 'none') payload.reasoning_effort = reasoningEffort;
+    }else{
+      payload.temperature = body.temperature ?? 0.32;
     }
 
     let r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -59,16 +60,19 @@ export default async function handler(req, res){
     });
     let data = await r.json().catch(()=>({}));
 
-    // Fallback de compatibilidade: se a conta/modelo não aceitar algum parâmetro novo,
-    // tenta novamente sem reasoning_effort/temperature, mantendo o mesmo modelo.
+    // Fallback de compatibilidade: se o modelo rejeitar parâmetros opcionais,
+    // tenta novamente com a carga mínima, mantendo o mesmo modelo.
     const errText = JSON.stringify(data || {}).toLowerCase();
-    if(!r.ok && (errText.includes('reasoning_effort') || errText.includes('temperature') || errText.includes('max_completion_tokens'))){
+    if(!r.ok && (errText.includes('reasoning_effort') || errText.includes('temperature') || errText.includes('max_completion_tokens') || errText.includes('max_tokens'))){
       const fallbackPayload = {
         model,
-        max_tokens: body.max_tokens || body.max_completion_tokens || 2600,
-        response_format: body.response_format || { type: 'json_object' },
-        messages: body.messages
+        messages: body.messages,
+        response_format: body.response_format || { type: 'json_object' }
       };
+      const limit = body.max_completion_tokens || body.max_tokens || 2600;
+      if(errText.includes('max_tokens')) fallbackPayload.max_completion_tokens = limit;
+      else if(errText.includes('max_completion_tokens')) fallbackPayload.max_tokens = limit;
+      else fallbackPayload.max_completion_tokens = limit;
       r = await fetch('https://api.openai.com/v1/chat/completions', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiKey}` },
