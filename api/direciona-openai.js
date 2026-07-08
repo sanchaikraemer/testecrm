@@ -8,12 +8,12 @@ export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
 function modelFromEnv(stage){
   const s = String(stage || '').toLowerCase();
   if(s.includes('diagnostico') || s.includes('diagnóstico')){
-    return process.env.OPENAI_MODEL_DIAGNOSTICO || process.env.OPENAI_MODEL || 'gpt-4o';
+    return process.env.OPENAI_MODEL_DIAGNOSTICO || process.env.OPENAI_MODEL || 'gpt-5.5-pro';
   }
   if(s.includes('mensagem') || s.includes('retomada') || s.includes('correcao') || s.includes('correção')){
-    return process.env.OPENAI_MODEL_RESPOSTAS || process.env.OPENAI_MODEL || 'gpt-4o';
+    return process.env.OPENAI_MODEL_RESPOSTAS || process.env.OPENAI_MODEL || 'gpt-5.5';
   }
-  return process.env.OPENAI_MODEL || 'gpt-4o';
+  return process.env.OPENAI_MODEL || 'gpt-5.5';
 }
 
 export default async function handler(req, res){
@@ -32,18 +32,68 @@ export default async function handler(req, res){
     if(!Array.isArray(body.messages) || !body.messages.length){
       return res.status(400).json({ error:'messages vazio.' });
     }
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const model = body.model || modelFromEnv(body.stage);
+    const stage = String(body.stage || '').toLowerCase();
+    const isReasoningModel = /^gpt-5|^o[0-9]/i.test(model);
+    const reasoningEffort = body.reasoning_effort || body.reasoning?.effort || (
+      stage.includes('diagnostico') || stage.includes('diagnóstico')
+        ? (process.env.OPENAI_REASONING_DIAGNOSTICO || 'xhigh')
+        : (process.env.OPENAI_REASONING_RESPOSTAS || 'high')
+    );
+
+    const payload = {
+      model,
+      temperature: body.temperature ?? 0.32,
+      max_completion_tokens: body.max_completion_tokens || body.max_tokens || 2600,
+      response_format: body.response_format || { type: 'json_object' },
+      messages: body.messages
+    };
+    if(isReasoningModel && reasoningEffort && reasoningEffort !== 'none'){
+      payload.reasoning_effort = reasoningEffort;
+    }
+
+    let r = await fetch('https://api.openai.com/v1/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: body.model || modelFromEnv(body.stage),
-        temperature: body.temperature ?? 0.32,
-        max_tokens: body.max_tokens || 2600,
+      body: JSON.stringify(payload)
+    });
+    let data = await r.json().catch(()=>({}));
+
+    // Fallback de compatibilidade: se a conta/modelo não aceitar algum parâmetro novo,
+    // tenta novamente sem reasoning_effort/temperature, mantendo o mesmo modelo.
+    const errText = JSON.stringify(data || {}).toLowerCase();
+    if(!r.ok && (errText.includes('reasoning_effort') || errText.includes('temperature') || errText.includes('max_completion_tokens'))){
+      const fallbackPayload = {
+        model,
+        max_tokens: body.max_tokens || body.max_completion_tokens || 2600,
         response_format: body.response_format || { type: 'json_object' },
         messages: body.messages
-      })
-    });
-    const data = await r.json().catch(()=>({}));
+      };
+      r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiKey}` },
+        body: JSON.stringify(fallbackPayload)
+      });
+      data = await r.json().catch(()=>({}));
+    }
+
+    // Fallback de acesso/modelo: se GPT-5.5 Pro não estiver liberado na conta,
+    // cai para GPT-5.5 sem quebrar a análise do corretor.
+    const modelErr = JSON.stringify(data || {}).toLowerCase();
+    if(!r.ok && model === 'gpt-5.5-pro' && (modelErr.includes('model') || modelErr.includes('access') || modelErr.includes('not found') || modelErr.includes('does not exist'))){
+      const fallbackModel = process.env.OPENAI_MODEL_DIAGNOSTICO_FALLBACK || 'gpt-5.5';
+      const fallbackPayload = {
+        ...payload,
+        model: fallbackModel
+      };
+      r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiKey}` },
+        body: JSON.stringify(fallbackPayload)
+      });
+      data = await r.json().catch(()=>({}));
+    }
+
     return res.status(r.status).json(data);
   }catch(e){
     return res.status(500).json({ error:e.message || String(e) });

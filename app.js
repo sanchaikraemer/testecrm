@@ -1575,7 +1575,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=62');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=64');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1928,8 +1928,10 @@ const DIRECIONA_FORBIDDEN_PHRASES=[
   "fico à disposição",
   "estou à disposição"
 ];
-const DIRECIONA_MODEL_DIAGNOSTICO=(window.DIRECIONA_MODEL_DIAGNOSTICO||localStorage.getItem('direciona_model_diagnostico')||window.DIRECIONA_MODEL||localStorage.getItem('direciona_model')||'gpt-4o');
+const DIRECIONA_MODEL_DIAGNOSTICO=(window.DIRECIONA_MODEL_DIAGNOSTICO||localStorage.getItem('direciona_model_diagnostico')||window.DIRECIONA_MODEL||localStorage.getItem('direciona_model')||'gpt-5.5-pro');
 const DIRECIONA_MODEL_RESPOSTAS=(window.DIRECIONA_MODEL_RESPOSTAS||localStorage.getItem('direciona_model_respostas')||window.DIRECIONA_MODEL||localStorage.getItem('direciona_model')||DIRECIONA_MODEL_DIAGNOSTICO);
+const DIRECIONA_REASONING_DIAGNOSTICO=(window.DIRECIONA_REASONING_DIAGNOSTICO||localStorage.getItem('direciona_reasoning_diagnostico')||'xhigh');
+const DIRECIONA_REASONING_RESPOSTAS=(window.DIRECIONA_REASONING_RESPOSTAS||localStorage.getItem('direciona_reasoning_respostas')||'high');
 
 function onlyJsonInstruction(){
   return 'Responda APENAS um JSON válido, sem markdown, sem comentários antes ou depois.';
@@ -2170,6 +2172,7 @@ async function requestDirecionaAI(stage,content,opts){
     model:opts.model||DIRECIONA_MODEL_DIAGNOSTICO,
     temperature:opts.temperature??0.22,
     max_tokens:opts.max_tokens||2600,
+    reasoning_effort:opts.reasoning_effort||((String(stage||'').includes('diagnostico')||String(stage||'').includes('diagnóstico'))?DIRECIONA_REASONING_DIAGNOSTICO:DIRECIONA_REASONING_RESPOSTAS),
     response_format:{type:'json_object'},
     messages:[{role:'user',content}]
   };
@@ -2195,12 +2198,12 @@ async function requestDirecionaAI(stage,content,opts){
 }
 async function gerarDiagnosticoComercial(contextContent){
   const content=[{type:'text',text:diagnosticoPrompt()}].concat(contextContent||[]);
-  const raw=await requestDirecionaAI('diagnostico_comercial',content,{model:DIRECIONA_MODEL_DIAGNOSTICO,temperature:0.18,max_tokens:3200});
+  const raw=await requestDirecionaAI('diagnostico_comercial',content,{model:DIRECIONA_MODEL_DIAGNOSTICO,reasoning_effort:DIRECIONA_REASONING_DIAGNOSTICO,temperature:0.18,max_tokens:4200});
   return normalizeDirecionaResult(raw);
 }
 async function gerarMensagensComerciais(contextContent,diagnostico){
   const content=[{type:'text',text:mensagensPrompt(diagnostico)}].concat(contextContent||[]);
-  const raw=await requestDirecionaAI('mensagens_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,temperature:0.34,max_tokens:3000});
+  const raw=await requestDirecionaAI('mensagens_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,reasoning_effort:DIRECIONA_REASONING_RESPOSTAS,temperature:0.34,max_tokens:3600});
   const out=normalizeDirecionaResult(Object.assign({},diagnostico,raw,{raciocinio_comercial:diagnostico.raciocinio_comercial||raw.raciocinio_comercial}));
   if(!out.retomadas.length&&Array.isArray(raw.retomadas))out.retomadas=raw.retomadas;
   return out;
@@ -2237,7 +2240,7 @@ async function validarOuCorrigirMensagens(contextContent,diagnostico,resposta){
   let problemas=validarRetomadasLocal(diagnostico,out);
   if(!problemas.length)return out;
   const content=[{type:'text',text:correcaoPrompt(diagnostico,out,problemas)}].concat(contextContent||[]);
-  const raw=await requestDirecionaAI('validacao_correcao_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,temperature:0.28,max_tokens:3000});
+  const raw=await requestDirecionaAI('validacao_correcao_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,reasoning_effort:DIRECIONA_REASONING_RESPOSTAS,temperature:0.28,max_tokens:3600});
   const corr=normalizeDirecionaResult(Object.assign({},diagnostico,raw,{raciocinio_comercial:diagnostico.raciocinio_comercial}));
   const problemas2=validarRetomadasLocal(diagnostico,corr);
   if(problemas2.length){corr.evitar=(corr.evitar?corr.evitar+' | ':'')+'Validador ainda encontrou pontos de atenção: '+problemas2.slice(0,3).join(' ')}
