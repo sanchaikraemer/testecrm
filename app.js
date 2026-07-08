@@ -1942,10 +1942,193 @@ function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.
 async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");await window.persistAiResult?.("analise",d,($('clientMessage')?.value||''));status("Análise interna concluída e salva.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
 async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");await window.persistAiResult?.("retomada",d,($('clientMessage')?.value||''));status("Retomada gerada e salva.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
 function clearAll(){historyFiles=[];lastFile=null;lastAnalysis=null;if($("clientMessage"))$("clientMessage").value="";if($("historyPrintInput"))$("historyPrintInput").value="";if($("lastPrintInput"))$("lastPrintInput").value="";counts();status("Aguardando mensagem, contexto ou última conversa.");$("analysisSituation").textContent="Cole uma mensagem ou anexe prints.";$("analysisHeat").textContent="—";$("analysisProfile").textContent="—";$("analysisRisk").textContent="—";$("analysisGoal").textContent="—";$("analysisNext").textContent="—";let a=$("analysisAvoid");if(a){a.style.display="none";a.textContent=""}$("analysisResponses").innerHTML='<div class="dia-empty">A análise aparecerá aqui.</div>';$("retomadaOutput").innerHTML='<div class="dia-empty">A retomada aparecerá aqui.</div>'}
-document.addEventListener("change",e=>{if(e.target&&e.target.id==="historyPrintInput"){historyFiles=historyFiles.concat(Array.from(e.target.files||[]));e.target.value="";counts();status(historyFiles.length+" print(s) de contexto anexado(s).")}if(e.target&&e.target.id==="lastPrintInput"){lastFile=(e.target.files&&e.target.files[0])?e.target.files[0]:null;e.target.value="";counts();status(lastFile?"Última conversa anexada.":"Nenhuma última conversa anexada.")}});
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="historyPrintInput"){const files=Array.from(e.target.files||[]);const zip=files.find(isZipFile);if(zip){e.target.value="";processWhatsAppZipForDireciona(zip);return;}historyFiles=historyFiles.concat(files);e.target.value="";counts();status(historyFiles.length+" arquivo(s) de contexto anexado(s).")}if(e.target&&e.target.id==="lastPrintInput"){const f=(e.target.files&&e.target.files[0])?e.target.files[0]:null;e.target.value="";if(f&&isZipFile(f)){processWhatsAppZipForDireciona(f);return;}lastFile=f;counts();status(lastFile?"Última conversa anexada.":"Nenhuma última conversa anexada.")}if(e.target&&e.target.id==="whatsappZipInput"){const f=(e.target.files&&e.target.files[0])?e.target.files[0]:null;e.target.value="";if(f)processWhatsAppZipForDireciona(f);}});
 document.addEventListener("click",e=>{let rm=e.target.closest(".dia-file-remove");if(rm){let kind=rm.dataset.kind;if(kind==="history"){historyFiles.splice(Number(rm.dataset.index),1)}else{lastFile=null}counts();status("Anexo removido.");return}let c=e.target.closest(".dia-copy");if(c){let t=decodeURIComponent(c.getAttribute("data-copy")||"");navigator.clipboard.writeText(t).then(()=>{c.textContent="Copiado";setTimeout(()=>c.textContent="Copiar",1200)});return}if(e.target&&e.target.id==="btnAiAnalyzeMain")analyze();if(e.target&&e.target.id==="btnRetomadaMain")retomada();if(e.target&&e.target.id==="btnClearAnalyzer")clearAll()});
 document.addEventListener("paste",e=>{let a=document.activeElement;if(!a||a.id!=="clientMessage")return;let imgs=Array.from((e.clipboardData&&e.clipboardData.items)||[]).filter(i=>i.type&&i.type.startsWith("image/")).map(i=>i.getAsFile()).filter(Boolean);if(imgs.length){historyFiles=historyFiles.concat(imgs);counts();status(historyFiles.length+" print(s) de contexto anexado(s) por Ctrl+V.")}});
+
+
+/* ===== Importação ZIP WhatsApp + transcrição de áudio para o Direciona ===== */
+const DIRECIONA_ZIP_KEYS=["/__direciona_shared_zip__","./__direciona_shared_zip__","__direciona_shared_zip__"];
+const DIRECIONA_SHARE_CACHE="direciona-sharetarget-stable";
+const DIRECIONA_AUDIO_RE=/\.(opus|ogg|mp3|m4a|wav|aac|webm)$/i;
+function isZipFile(file){
+  const name=String(file&&file.name||"").toLowerCase();
+  const type=String(file&&file.type||"").toLowerCase();
+  return name.endsWith(".zip")||type.includes("zip")||type==="application/octet-stream";
+}
+function setClientText(text){
+  const area=$("clientMessage");
+  if(area)area.value=text;
+}
+function appendStatusLine(t){
+  status(t);
+  const area=$("clientMessage");
+  if(area) area.dataset.whatsappImportStatus=t;
+}
+async function ensureDirecionaJSZip(){
+  if(window.JSZip)return window.JSZip;
+  await new Promise((resolve,reject)=>{
+    const s=document.createElement("script");
+    s.src="./vendor/jszip.min.js?v=57";
+    s.onload=resolve;
+    s.onerror=()=>reject(new Error("Não consegui carregar a leitura de ZIP. Envie a pasta vendor/jszip.min.js junto com o sistema."));
+    document.head.appendChild(s);
+  });
+  return window.JSZip;
+}
+function normalizeZipName(name){return String(name||"").split(/[\\/]/).pop().trim();}
+function mimeFromAudioName(name){
+  const n=String(name||"").toLowerCase();
+  if(n.endsWith(".opus"))return "audio/ogg";
+  if(n.endsWith(".ogg"))return "audio/ogg";
+  if(n.endsWith(".mp3"))return "audio/mpeg";
+  if(n.endsWith(".m4a"))return "audio/mp4";
+  if(n.endsWith(".wav"))return "audio/wav";
+  if(n.endsWith(".aac"))return "audio/aac";
+  if(n.endsWith(".webm"))return "audio/webm";
+  return "application/octet-stream";
+}
+function arrayBufferToBase64(buffer){
+  let binary="";const bytes=new Uint8Array(buffer);const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}
+  return btoa(binary);
+}
+async function transcribeAudioBuffer(name,buffer){
+  const payload={fileName:normalizeZipName(name),mimeType:mimeFromAudioName(name),base64:arrayBufferToBase64(buffer)};
+  const endpoints=[];
+  if(window.SB_URL) endpoints.push(`${window.SB_URL}/functions/v1/direciona-transcrever-audio`);
+  if(window.SB_URL) endpoints.push(`${window.SB_URL}/functions/v1/direciona-audio-transcribe`);
+  endpoints.push("./api/transcrever-audio");
+  let lastErr="";
+  for(const url of endpoints){
+    try{
+      const headers={"Content-Type":"application/json"};
+      if(url.includes("supabase.co")){
+        const token=(window.SB_KEY||SB_KEY||"");
+        headers.apikey=token;headers.Authorization="Bearer "+token;
+      }
+      const res=await fetch(url,{method:"POST",headers,body:JSON.stringify(payload)});
+      const data=await res.json().catch(()=>({}));
+      if(res.ok&&(data.text||data.transcription||data.transcript))return String(data.text||data.transcription||data.transcript).trim();
+      lastErr=data.error||data.details||("HTTP "+res.status);
+    }catch(e){lastErr=e.message||String(e);}
+  }
+  throw new Error(lastErr||"sem endpoint de transcrição configurado");
+}
+function parseWhatsAppDate(line){
+  const m=String(line||"").match(/^\[?(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\]?\s*-?/);
+  if(!m)return "";
+  return `${m[1].padStart(2,"0")}/${m[2].padStart(2,"0")}/${m[3]} ${m[4]}`;
+}
+function injectAudioTranscripts(txt,transcripts){
+  let out=String(txt||"");
+  const used=new Set();
+  for(const item of transcripts){
+    const base=normalizeZipName(item.name);
+    if(!item.text)continue;
+    const safe=`[Áudio transcrito - ${base}] ${item.text}`;
+    if(out.includes(base)){
+      const lines=out.split(/\r?\n/).map(line=>{
+        if(line.includes(base)&&!used.has(base)){used.add(base);return line+"\n"+safe;}
+        return line;
+      });
+      out=lines.join("\n");
+    }
+  }
+  const leftovers=transcripts.filter(i=>i.text&&!used.has(normalizeZipName(i.name)));
+  if(leftovers.length){
+    out += "\n\n--- ÁUDIOS TRANSCRITOS NÃO VINCULADOS A UMA LINHA DO TXT ---\n" + leftovers.map(i=>`[${normalizeZipName(i.name)}] ${i.text}`).join("\n");
+  }
+  return out;
+}
+async function processWhatsAppZipForDireciona(file,{autoAnalyze=false}={}){
+  if(!file)return;
+  try{
+    if(typeof window.switchView==="function")window.switchView("direciona");
+  }catch(_){ }
+  try{
+  appendStatusLine("Lendo exportação do WhatsApp...");
+  const JSZip=await ensureDirecionaJSZip();
+  const zip=await JSZip.loadAsync(file);
+  const txtEntries=[],audioEntries=[];
+  zip.forEach((path,entry)=>{
+    if(entry.dir)return;
+    if(/\.txt$/i.test(path))txtEntries.push([path,entry]);
+    else if(DIRECIONA_AUDIO_RE.test(path))audioEntries.push([path,entry]);
+  });
+  if(!txtEntries.length)throw new Error("O ZIP não tem arquivo .txt da conversa. Exporte a conversa do WhatsApp com mídia.");
+  txtEntries.sort((a,b)=>a[0].length-b[0].length);
+  const txtName=txtEntries[0][0];
+  let conversation=await txtEntries[0][1].async("string");
+  conversation=conversation.replace(/^\uFEFF/,"");
+  const transcripts=[];
+  const total=audioEntries.length;
+  const limit=Math.min(total,30);
+  for(let i=0;i<limit;i++){
+    const [name,entry]=audioEntries[i];
+    appendStatusLine(`Transcrevendo áudio ${i+1}/${limit}...`);
+    try{
+      const buffer=await entry.async("arraybuffer");
+      const text=await transcribeAudioBuffer(name,buffer);
+      transcripts.push({name,text});
+    }catch(e){
+      transcripts.push({name,text:"",error:e.message||String(e)});
+    }
+  }
+  let imported=injectAudioTranscripts(conversation,transcripts);
+  const failed=transcripts.filter(t=>!t.text).length;
+  const ok=transcripts.filter(t=>t.text).length;
+  const header=[
+    "[EXPORTAÇÃO DO WHATSAPP IMPORTADA PELO DIRECIONA]",
+    `Arquivo ZIP: ${file.name||"conversa.zip"}`,
+    `TXT lido: ${normalizeZipName(txtName)}`,
+    `Áudios encontrados no ZIP: ${total}`,
+    `Áudios enviados para transcrição: ${limit}`,
+    `Áudios transcritos: ${ok}`,
+    failed?`Áudios sem transcrição: ${failed}`:"",
+    total>limit?`Observação: limite de segurança desta importação: ${limit} áudios. Os demais ficaram fora desta análise.`:"",
+    "--- INÍCIO DA CONVERSA ---"
+  ].filter(Boolean).join("\n");
+  const footer="\n--- FIM DA CONVERSA ---";
+  imported=header+"\n"+imported+footer;
+  const safe=imported.length<=120000?imported:(imported.slice(0,25000)+"\n\n[... trecho intermediário reduzido para caber na análise ...]\n\n"+imported.slice(-90000));
+  setClientText(safe);
+  lastFile=new File([safe],"whatsapp-importado-transcrito.txt",{type:"text/plain"});
+  counts();
+  appendStatusLine(ok?`WhatsApp importado: ${ok} áudio(s) transcrito(s). Clique em Analisar conversa.`:`WhatsApp importado. Nenhum áudio foi transcrito; confira configuração da transcrição.`);
+  if(autoAnalyze) setTimeout(()=>document.getElementById("btnAiAnalyzeMain")?.click(),350);
+}catch(e){
+  console.error(e);
+  alert("Erro ao importar WhatsApp: "+(e.message||e));
+  status("Erro ao importar exportação do WhatsApp.");
+}
+}
+async function checkSharedWhatsAppZip(){
+  const params=new URLSearchParams(location.search);
+  const came=params.has("shared")||params.get("source")==="share-target"||params.get("view")==="direciona";
+  if(!came||!("caches" in window))return;
+  try{
+    const names=await caches.keys();
+    const list=[DIRECIONA_SHARE_CACHE,...names.filter(n=>n!==DIRECIONA_SHARE_CACHE&&n.includes("sharetarget"))];
+    for(const cacheName of list){
+      const cache=await caches.open(cacheName);
+      for(const key of DIRECIONA_ZIP_KEYS){
+        const cached=await cache.match(key);
+        if(!cached)continue;
+        const blob=await cached.blob();
+        const name=decodeURIComponent(cached.headers.get("X-File-Name")||"conversa-whatsapp.zip");
+        for(const k of DIRECIONA_ZIP_KEYS){try{await cache.delete(k)}catch(_){}}
+        try{history.replaceState(null,"",location.pathname)}catch(_){ }
+        await processWhatsAppZipForDireciona(new File([blob],name,{type:blob.type||"application/zip"}),{autoAnalyze:false});
+        return;
+      }
+    }
+  }catch(e){console.warn("Falha ao ler ZIP compartilhado",e);}
+}
+window.DirecionaWhatsAppImport={processZip:processWhatsAppZipForDireciona,checkShared:checkSharedWhatsAppZip};
+
 setTimeout(updateFlowHint,600);
+setTimeout(checkSharedWhatsAppZip,900);
 })();
 
 

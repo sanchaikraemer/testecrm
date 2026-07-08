@@ -8004,3 +8004,7 @@ body.t-light .card-nm,body.t-light .sb-nm,body.t-dark .card-nm,body.t-dark .sb-n
 body.t-light .chip,body.t-dark .chip,body.t-navy .chip,body.t-direciona .chip{background:#262930!important;color:#F5F5F6!important;border-color:#2C2D32!important}body.t-light .chip-nc-green,body.t-dark .chip-nc-green,body.t-navy .chip-nc-green,body.t-direciona .chip-nc-green{background:rgba(119,230,154,.14)!important;color:#77E69A!important;border-color:rgba(119,230,154,.35)!important}body.t-light .chip-nc-red,body.t-light .chip-dt-red,body.t-dark .chip-nc-red,body.t-dark .chip-dt-red,body.t-navy .chip-nc-red,body.t-navy .chip-dt-red,body.t-direciona .chip-nc-red,body.t-direciona .chip-dt-red{background:rgba(255,93,93,.14)!important;color:#FF5D5D!important;border-color:rgba(255,93,93,.35)!important}body.t-light .wa-btn,body.t-dark .wa-btn,body.t-navy .wa-btn,body.t-direciona .wa-btn{background:#25D366!important;border-color:#20B95A!important}
 body.t-light .toast,body.t-dark .toast,body.t-navy .toast,body.t-direciona .toast{background:#1D1F24!important;color:#F5F5F6!important;border:1px solid #2C2D32!important}
 .card-prio{display:none!important}
+
+/* v57 — Importação WhatsApp no Direciona */
+.dia-whatsapp-import{margin-top:10px;width:100%;justify-content:center;border-style:dashed;}
+.dia-whatsapp-import input{display:none;}

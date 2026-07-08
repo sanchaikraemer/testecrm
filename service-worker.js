@@ -1,22 +1,32 @@
-const CACHE='levecrm-v56';
+const CACHE='levecrm-v57-whatsapp';
+const SHARE_CACHE='direciona-sharetarget-stable';
+const ZIP_KEYS=['/__direciona_shared_zip__','./__direciona_shared_zip__','__direciona_shared_zip__'];
 const CORE=[
-  './','./index.html','./propostas.html','./styles.css?v=56','./app.js?v=56','./propostas.js?v=56',
-  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=56'
+  './','./index.html','./propostas.html','./styles.css?v=57','./app.js?v=57','./propostas.js?v=56',
+  './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=56',
+  './vendor/jszip.min.js?v=57','./share.html'
 ];
 
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(CORE.map(u=>cache.add(u)))).then(()=>self.skipWaiting()));
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE&&key!==SHARE_CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
 });
 
 self.addEventListener('fetch',event=>{
   const request=event.request;
-  if(request.method!=='GET')return;
   const url=new URL(request.url);
   if(url.origin!==self.location.origin)return;
+
+  if(request.method==='POST'&&(url.pathname.endsWith('/share-target')||url.pathname.endsWith('/share.html'))){
+    event.respondWith(handleShare(request));
+    return;
+  }
+
+  if(url.pathname.includes('/api/'))return;
+  if(request.method!=='GET')return;
 
   if(request.mode==='navigate'){
     event.respondWith((async()=>{
@@ -35,7 +45,7 @@ self.addEventListener('fetch',event=>{
   }
 
   event.respondWith((async()=>{
-    const isCritical=/\.(?:js|css|json)$/.test(url.pathname);
+    const isCritical=/\.(?:js|css|json|webmanifest)$/.test(url.pathname);
     if(isCritical){
       try{
         const response=await fetch(request,{cache:'no-store'});
@@ -54,6 +64,26 @@ self.addEventListener('fetch',event=>{
   })());
 });
 
+async function handleShare(request){
+  try{
+    const form=await request.formData();
+    const files=form.getAll('zip');
+    const file=files&&files[0];
+    if(file&&typeof file.arrayBuffer==='function'){
+      const body=await file.arrayBuffer();
+      const cache=await caches.open(SHARE_CACHE);
+      const headers=new Headers({
+        'Content-Type':file.type||'application/zip',
+        'X-File-Name':encodeURIComponent(file.name||'conversa-whatsapp.zip'),
+        'X-Shared-At':new Date().toISOString(),
+        'Cache-Control':'no-store'
+      });
+      await Promise.all(ZIP_KEYS.map(k=>cache.put(k,new Response(body.slice(0),{headers}))));
+    }
+  }catch(_){ }
+  const target=new URL('./?shared=1&view=direciona',self.registration.scope).toString();
+  return Response.redirect(target,303);
+}
 
 self.addEventListener('push',event=>{
   let data={};try{data=event.data?.json()||{};}catch{data={title:'LeveCRM',body:event.data?.text()||'Você tem um compromisso.',url:'./'};}

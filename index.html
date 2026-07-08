@@ -34,7 +34,7 @@
 <meta name="theme-color" content="#0A0A0B"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="56"/>
+<meta name="application-version" content="57"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -89,7 +89,7 @@
 
 
 
-<link rel="stylesheet" href="./styles.css?v=56"/>
+<link rel="stylesheet" href="./styles.css?v=57"/>
 </head>
 <body class="t-navy has-sidebar">
 
@@ -99,7 +99,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span> <span class="side-version">v56</span></strong><small>Corretores de imóveis</small></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span> <span class="side-version">v57</span></strong><small>Corretores de imóveis</small></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -225,7 +225,7 @@
     <div class="access-logo">
       <img class="access-logo-img" src="./levecrm-logo.png" alt="LeveCRM"/>
       <div>
-        <div class="access-kicker">LeveCRM • acesso <span class="side-version">v56</span></div>
+        <div class="access-kicker">LeveCRM • acesso <span class="side-version">v57</span></div>
         <div class="access-title">Entrar</div>
       </div>
     </div>
@@ -325,7 +325,7 @@
 
     <section class="dia-card">
       <h2>Analisar conversa</h2>
-      <p class="dia-sub">Use prints curtos e legíveis. Separe o histórico da última conversa para melhorar a leitura da IA.</p>
+      <p class="dia-sub">Use prints, TXT ou a exportação ZIP do WhatsApp. Quando houver áudio no ZIP, o Direciona tenta transcrever antes da análise.</p>
 
       <label class="dia-label" for="clientMessage">Mensagem digitada / observação do corretor</label>
       <textarea id="clientMessage" class="dia-textarea" placeholder="Opcional: detalhe algo que não aparece nos prints. Ex.: cliente comparou com outro empreendimento, quer forma de pagamento, busca investimento."></textarea>
@@ -336,7 +336,7 @@
           <p>Histórico da conversa, objeções anteriores, imóveis citados e perfil do cliente.</p>
           <label class="dia-btn dia-btn-soft">
             📎 Anexar contexto
-            <input type="file" id="historyPrintInput" accept="image/*,.txt,text/plain" multiple>
+            <input type="file" id="historyPrintInput" accept="image/*,.txt,text/plain,.zip,application/zip" multiple>
           </label>
           <div class="dia-hint">Contexto anexado: <b id="historyCount">0</b> arquivo(s)</div><div id="historyFileList" class="dia-file-list"></div>
         </div>
@@ -346,7 +346,11 @@
           <p>Print mais recente. A IA usa isso como prioridade para definir a retomada.</p>
           <label class="dia-btn dia-btn-last">
             📌 Anexar última conversa
-            <input type="file" id="lastPrintInput" accept="image/*,.txt,text/plain">
+            <input type="file" id="lastPrintInput" accept="image/*,.txt,text/plain,.zip,application/zip">
+          </label>
+          <label class="dia-btn dia-btn-soft dia-whatsapp-import">
+            📲 Importar exportação do WhatsApp
+            <input type="file" id="whatsappZipInput" accept=".zip,application/zip,application/x-zip-compressed">
           </label>
           <div class="dia-hint">Última conversa: <b id="lastCount">0</b> arquivo</div><div id="lastFileList" class="dia-file-list"></div>
         </div>
@@ -814,7 +818,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./app.js?v=56"></script>
+<script src="./app.js?v=57"></script>
 
 </body>
 </html>
