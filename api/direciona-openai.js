@@ -4,6 +4,18 @@
 // Configure OPENAI_API_KEY no ambiente do deploy.
 export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
 
+
+function modelFromEnv(stage){
+  const s = String(stage || '').toLowerCase();
+  if(s.includes('diagnostico') || s.includes('diagnóstico')){
+    return process.env.OPENAI_MODEL_DIAGNOSTICO || process.env.OPENAI_MODEL || 'gpt-4o';
+  }
+  if(s.includes('mensagem') || s.includes('retomada') || s.includes('correcao') || s.includes('correção')){
+    return process.env.OPENAI_MODEL_RESPOSTAS || process.env.OPENAI_MODEL || 'gpt-4o';
+  }
+  return process.env.OPENAI_MODEL || 'gpt-4o';
+}
+
 export default async function handler(req, res){
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -24,9 +36,10 @@ export default async function handler(req, res){
       method:'POST',
       headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: body.model || 'gpt-4o-mini',
+        model: body.model || modelFromEnv(body.stage),
         temperature: body.temperature ?? 0.32,
         max_tokens: body.max_tokens || 2600,
+        response_format: body.response_format || { type: 'json_object' },
         messages: body.messages
       })
     });

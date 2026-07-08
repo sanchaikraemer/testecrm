@@ -1,8 +1,8 @@
-const CACHE='levecrm-v61-whatsapp';
+const CACHE='levecrm-v62-direciona-ai';
 const SHARE_CACHE='direciona-sharetarget-stable';
 const ZIP_KEYS=['/__direciona_shared_zip__','./__direciona_shared_zip__','__direciona_shared_zip__'];
 const CORE=[
-  './','./index.html','./propostas.html','./styles.css?v=58','./app.js?v=60','./propostas.js?v=56',
+  './','./index.html','./propostas.html','./styles.css?v=58','./app.js?v=62','./propostas.js?v=56',
   './levecrm-logo.png','./manifest.webmanifest','./icon-192.png','./icon-512.png','./leads-iniciais.json?v=56',
   './vendor/jszip.min.js?v=57','./share.html'
 ];
