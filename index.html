@@ -34,7 +34,7 @@
 <meta name="theme-color" content="#0A0A0B"/>
 <meta name="apple-mobile-web-app-title" content="LeveCRM"/>
 <meta name="application-name" content="LeveCRM"/>
-<meta name="application-version" content="61"/>
+<meta name="application-version" content="62"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -99,7 +99,7 @@
   <div class="side-top">
     <a class="side-logo" id="sideLogoHome" href="javascript:void(0)">
       <img src="./levecrm-logo.png" alt="LeveCRM"/>
-      <span class="side-brand"><strong>Leve<span class="crm">CRM</span> <span class="side-version">v61</span></strong><small>Corretores de imóveis</small></span>
+      <span class="side-brand"><strong>Leve<span class="crm">CRM</span> <span class="side-version">v62</span></strong><small>Corretores de imóveis</small></span>
     </a>
     <button id="sideToggleNav" type="button" aria-label="Recolher menu">≡</button>
   </div>
@@ -225,7 +225,7 @@
     <div class="access-logo">
       <img class="access-logo-img" src="./levecrm-logo.png" alt="LeveCRM"/>
       <div>
-        <div class="access-kicker">LeveCRM • acesso <span class="side-version">v61</span></div>
+        <div class="access-kicker">LeveCRM • acesso <span class="side-version">v62</span></div>
         <div class="access-title">Entrar</div>
       </div>
     </div>
@@ -370,16 +370,19 @@
     </section>
 
     <section class="dia-card">
-      <h2>Leitura rápida</h2>
+      <h2>Diagnóstico comercial</h2>
       <div class="dia-grid">
-        <div class="dia-mini"><b>Situação</b><span id="analysisSituation">Cole uma mensagem ou anexe prints.</span></div>
-        <div class="dia-mini"><b>Temperatura</b><span id="analysisHeat">—</span></div>
-        <div class="dia-mini"><b>Perfil provável</b><span id="analysisProfile">—</span></div>
-        <div class="dia-mini"><b>Risco</b><span id="analysisRisk">—</span></div>
-        <div class="dia-mini"><b>Objetivo</b><span id="analysisGoal">—</span></div>
-        <div class="dia-mini"><b>Próximo passo</b><span id="analysisNext">—</span></div>
+        <div class="dia-mini"><b>Última pessoa a falar</b><span id="analysisLastSpeaker">Cole uma mensagem ou anexe prints.</span></div>
+        <div class="dia-mini"><b>Último compromisso do cliente</b><span id="analysisLastCommitment">—</span></div>
+        <div class="dia-mini"><b>Última informação prometida</b><span id="analysisPromised">—</span></div>
+        <div class="dia-mini"><b>Produto principal</b><span id="analysisMainProduct">—</span></div>
+        <div class="dia-mini"><b>Produtos paralelos</b><span id="analysisOtherProducts">—</span></div>
+        <div class="dia-mini"><b>Principal objeção</b><span id="analysisObjection">—</span></div>
+        <div class="dia-mini"><b>Pendência financeira</b><span id="analysisFinancial">—</span></div>
+        <div class="dia-mini"><b>Quem deve agir agora</b><span id="analysisWhoActs">—</span></div>
+        <div class="dia-mini"><b>Etapa do funil</b><span id="analysisFunnelStage">—</span></div>
+        <div class="dia-mini"><b>Probabilidade de venda</b><span id="analysisSaleProbability">—</span></div>
       </div>
-      <div id="analysisAvoid" class="dia-avoid" style="display:none"></div>
     </section>
 
     <section class="dia-card">
@@ -818,7 +821,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./app.js?v=60"></script>
+<script src="./app.js?v=62"></script>
 
 </body>
 </html>
