@@ -8008,3 +8008,9 @@ body.t-light .toast,body.t-dark .toast,body.t-navy .toast,body.t-direciona .toas
 /* v57 — Importação WhatsApp no Direciona */
 .dia-whatsapp-import{margin-top:10px;width:100%;justify-content:center;border-style:dashed;}
 .dia-whatsapp-import input{display:none;}
+
+/* v61 — Corrige contraste do modal de lead no tema grafite: rótulos apagados
+   e campos de texto que ficaram claros (só os selects tinham sido escurecidos) */
+#dlg .lbl,#leadForm .lbl{color:#9aa4b2!important}
+#dlg .field .finput,#dlg .field select,#dlg .field textarea,#leadForm .field .finput,#leadForm .field select,#leadForm .field textarea{background:#1D1F24!important;color:#F5F5F6!important;border-color:#2C2D32!important;color-scheme:dark}
+#dlg .field .finput::placeholder,#dlg .field textarea::placeholder,#leadForm .field .finput::placeholder,#leadForm .field textarea::placeholder{color:#6b7280!important}
