@@ -1934,9 +1934,25 @@ Regras: português brasileiro, direto, sem inventar dados, sem usar “faz senti
 let content=[{type:"text",text:prompt+"\n\nObservação do corretor:\n"+(msg||"Sem observação.")+"\n\nAnálise prévia disponível:\n"+(lastAnalysis?JSON.stringify(lastAnalysis):"Nenhuma.")+"\n\nPrints de contexto são histórico. Última conversa é prioridade máxima."}];
 for(let f of historyFiles){await addFileToContent(content,f,"PRINT DE CONTEXTO")}
 if(lastFile){await addFileToContent(content,lastFile,"ÚLTIMA CONVERSA / PRIORIDADE MÁXIMA")}
-let authToken=(window.SB_KEY||SB_KEY);try{const ss=await window.AUTH_CLIENT?.auth?.getSession?.();authToken=ss?.data?.session?.access_token||authToken}catch(e){}let res=await fetch(`${(window.SB_URL||SB_URL)}/functions/v1/direciona-openai`,{method:"POST",headers:{"Content-Type":"application/json","apikey":(window.SB_KEY||SB_KEY),"Authorization":"Bearer "+authToken},body:JSON.stringify({model:"gpt-4o-mini",temperature:0.32,max_tokens:2600,messages:[{role:"user",content}]})});
-if(!res.ok)throw new Error(await res.text().catch(()=>("HTTP "+res.status)));
-let j=await res.json();let txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:"").trim();let parsed;try{parsed=JSON.parse(txt)}catch(e){let m=txt.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0])}if(!parsed)throw new Error("A IA não retornou JSON válido.");return parsed}
+const diaPayload={model:"gpt-4o-mini",temperature:0.32,max_tokens:2600,messages:[{role:"user",content}]};
+const diaEndpoints=[];
+if(window.SB_URL||SB_URL) diaEndpoints.push({url:`${(window.SB_URL||SB_URL)}/functions/v1/direciona-openai`,supabase:true});
+diaEndpoints.push({url:"https://testecrm-ten.vercel.app/api/direciona-openai",supabase:false});
+let j=null,diaLastErr="";
+for(const ep of diaEndpoints){
+  try{
+    const headers={"Content-Type":"application/json"};
+    if(ep.supabase){
+      let authToken=(window.SB_KEY||SB_KEY);try{const ss=await window.AUTH_CLIENT?.auth?.getSession?.();authToken=ss?.data?.session?.access_token||authToken}catch(e){}
+      headers.apikey=(window.SB_KEY||SB_KEY);headers.Authorization="Bearer "+authToken;
+    }
+    let res=await fetch(ep.url,{method:"POST",headers,body:JSON.stringify(diaPayload)});
+    if(!res.ok){diaLastErr=await res.text().catch(()=>("HTTP "+res.status));continue}
+    j=await res.json();break;
+  }catch(e){diaLastErr=e.message||String(e)}
+}
+if(!j)throw new Error(diaLastErr||"Falha ao chamar IA.");
+let txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:"").trim();let parsed;try{parsed=JSON.parse(txt)}catch(e){let m=txt.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0])}if(!parsed)throw new Error("A IA não retornou JSON válido.");return parsed}
 function reading(d){$("analysisSituation").textContent=d.situacao||"Análise concluída.";$("analysisHeat").textContent=d.temperatura||"—";$("analysisProfile").textContent=d.perfil||"—";$("analysisRisk").textContent=d.risco||"—";$("analysisGoal").textContent=d.objetivo||"—";$("analysisNext").textContent=d.proximo_passo||"—";let a=$("analysisAvoid");if(a&&d.evitar){a.style.display="block";a.textContent="Evitar: "+d.evitar}}
 function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.length){area.innerHTML='<div class="dia-empty">'+esc(empty)+'</div>';return}area.innerHTML=items.map((r,i)=>`<div class="dia-response"><div class="dia-response-head"><div class="dia-response-label">${esc(r.label||("Opção "+(i+1)))}</div><button class="dia-copy" type="button" data-copy="${encodeURIComponent(r.texto||"")}">Copiar</button></div><p>${esc(r.texto||"")}</p>${r.dica?`<div class="dia-tip">${esc(r.dica)}</div>`:""}</div>`).join("")}
 async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");await window.persistAiResult?.("analise",d,($('clientMessage')?.value||''));status("Análise interna concluída e salva.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
