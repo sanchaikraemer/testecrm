@@ -1,4 +1,4 @@
-const CACHE='levecrm-v62-whatsapp';
+const CACHE='levecrm-v62-direciona-ai';
 const SHARE_CACHE='direciona-sharetarget-stable';
 const ZIP_KEYS=['/__direciona_shared_zip__','./__direciona_shared_zip__','__direciona_shared_zip__'];
 const CORE=[

@@ -1575,7 +1575,7 @@ async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol==='file:')return;
   try{
-    const reg=await navigator.serviceWorker.register('./service-worker.js?v=56');
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=62');
     await reg.update();
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.addEventListener('controllerchange',()=>{
@@ -1914,51 +1914,350 @@ async function addFileToContent(content,file,label){
 }
 
 function busy(btn,on,text){if(!btn)return;btn.disabled=!!on;btn.textContent=on?"Analisando...":text}
-async function callOpenAI(mode){
-let msg=($("clientMessage")?.value||"").trim();
-if(!msg&&!historyFiles.length&&!lastFile){alert("Cole uma observação, anexe contexto ou a última conversa.");status("Falta mensagem, contexto ou última conversa.");return null}
-let retomada=mode==="retomada";
-let diagBase=
-`Você é um especialista comercial em vendas imobiliárias com QI de 160 e atua como um gerente comercial experiente de construtora.
-Sua função NÃO é resumir conversas. Sua função é entender o contexto comercial completo de uma conversa de WhatsApp entre corretor e cliente e decidir qual é a melhor próxima ação para aumentar a chance de venda.
-Leia TODA a conversa, desde a primeira até a última mensagem, considerando textos, áudios transcritos e documentos enviados. Nunca analise apenas as últimas mensagens.
-Regras importantes: não invente informações; nunca suponha objeções que o cliente não demonstrou; nunca faça perguntas que já foram respondidas durante a conversa; considere todo o histórico antes de responder; descubra quem ficou responsável pelo próximo passo; entenda exatamente em qual etapa da venda o cliente está; continue exatamente de onde a conversa parou.
-Identifique sempre: 1) quem foi a última pessoa que falou; 2) qual foi o último compromisso assumido pelo cliente; 3) qual foi a última informação prometida pelo corretor; 4) produto principal de interesse; 5) produtos secundários citados; 6) principal objeção existente (se não existir, escreva "Sem objeção explícita.", nunca invente uma); 7) existe pendência financeira — entrada, parcelas, financiamento, avaliação, venda de outro imóvel (se não existir, escreva "Não há pendência financeira."); 8) quem deve tomar o próximo passo, Cliente ou Corretor, e por quê; 9) etapa do funil: Descoberta, Interesse, Comparação, Visita, Análise financeira, Negociação, Decisão ou Pós-venda; 10) probabilidade de venda: Muito baixa, Baixa, Média, Alta ou Muito alta, com justificativa.`;
-let prompt=retomada?
-diagBase+`
-Depois gere exatamente 3 sugestões de mensagem. As mensagens devem parecer escritas por um corretor experiente, jamais parecer um robô. Jamais usar frases como "lembrei de você", "estive pensando", "faz sentido", "ainda tem interesse?", "segue interessado?", "passando para saber", "caso não tenha agradado", "qualquer dúvida", "fico à disposição". Evite mensagens genéricas. Continue exatamente do ponto onde a conversa terminou. Use a pendência existente como gancho. Se o próximo passo for uma visita, a mensagem deve incentivar naturalmente o agendamento. Se existir uma pendência financeira, retome exatamente esse assunto. Cada mensagem deve ter aproximadamente entre 250 e 450 caracteres, sem emojis, sem textos longos e sem mais de uma pergunta — a pergunta deve mover a venda para frente.
-Responda APENAS JSON válido, sem markdown:
-{"ultima_pessoa_falou":"cliente|corretor|indefinido","ultimo_compromisso_cliente":"o que o cliente disse por último, resumido","ultima_informacao_prometida":"o que o corretor prometeu enviar ou fazer","produto_principal":"nome do imóvel/produto discutido","produtos_paralelos":"outros produtos citados, ou 'Nenhum'","principal_objecao":"objeção real do cliente, ou 'Sem objeção explícita.'","pendencia_financeira":"pendência financeira específica, ou 'Não há pendência financeira.'","quem_deve_agir":"Cliente ou Corretor, seguido de travessão e o motivo curto","etapa_funil":"Descoberta|Interesse|Comparação|Visita|Análise financeira|Negociação|Decisão|Pós-venda","probabilidade_venda":"Muito baixa, Baixa, Média, Alta ou Muito alta, seguido de travessão e a justificativa curta","retomadas":[{"texto":"mensagem 1, pronta para enviar, a partir do ponto exato onde a conversa parou"},{"texto":"mensagem 2, pronta para enviar, com abordagem diferente da 1"},{"texto":"mensagem 3, pronta para enviar, com abordagem diferente das anteriores"}]}
-Nunca copie literalmente os textos de exemplo acima — eles descrevem o formato esperado, não o conteúdo da resposta; substitua sempre por texto real extraído da conversa.`:
-diagBase+`
-NÃO gere mensagem pronta ao cliente nesta etapa.
-Responda APENAS JSON válido, sem markdown:
-{"ultima_pessoa_falou":"cliente|corretor|indefinido","ultimo_compromisso_cliente":"o que o cliente disse por último, resumido","ultima_informacao_prometida":"o que o corretor prometeu enviar ou fazer","produto_principal":"nome do imóvel/produto discutido","produtos_paralelos":"outros produtos citados, ou 'Nenhum'","principal_objecao":"objeção real do cliente, ou 'Sem objeção explícita.'","pendencia_financeira":"pendência financeira específica, ou 'Não há pendência financeira.'","quem_deve_agir":"Cliente ou Corretor, seguido de travessão e o motivo curto","etapa_funil":"Descoberta|Interesse|Comparação|Visita|Análise financeira|Negociação|Decisão|Pós-venda","probabilidade_venda":"Muito baixa, Baixa, Média, Alta ou Muito alta, seguido de travessão e a justificativa curta","retomadas":[]}
-Nunca copie literalmente os textos de exemplo acima — eles descrevem o formato esperado, não o conteúdo da resposta; substitua sempre por texto real extraído da conversa.`;
-let content=[{type:"text",text:prompt+"\n\nObservação do corretor:\n"+(msg||"Sem observação.")+"\n\nAnálise prévia disponível:\n"+(lastAnalysis?JSON.stringify(lastAnalysis):"Nenhuma.")+"\n\nPrints de contexto são histórico. Última conversa é prioridade máxima."}];
-for(let f of historyFiles){await addFileToContent(content,f,"PRINT DE CONTEXTO")}
-if(lastFile){await addFileToContent(content,lastFile,"ÚLTIMA CONVERSA / PRIORIDADE MÁXIMA")}
-const diaPayload={model:"gpt-4o-mini",temperature:0.32,max_tokens:2600,messages:[{role:"user",content}]};
-const diaEndpoints=[];
-if(window.SB_URL||SB_URL) diaEndpoints.push({url:`${(window.SB_URL||SB_URL)}/functions/v1/direciona-openai`,supabase:true});
-diaEndpoints.push({url:"https://testecrm-ten.vercel.app/api/direciona-openai",supabase:false});
-let j=null,diaLastErr="";
-for(const ep of diaEndpoints){
-  try{
-    const headers={"Content-Type":"application/json"};
-    if(ep.supabase){
-      let authToken=(window.SB_KEY||SB_KEY);try{const ss=await window.AUTH_CLIENT?.auth?.getSession?.();authToken=ss?.data?.session?.access_token||authToken}catch(e){}
-      headers.apikey=(window.SB_KEY||SB_KEY);headers.Authorization="Bearer "+authToken;
-    }
-    let res=await fetch(ep.url,{method:"POST",headers,body:JSON.stringify(diaPayload)});
-    if(!res.ok){diaLastErr=await res.text().catch(()=>("HTTP "+res.status));continue}
-    j=await res.json();break;
-  }catch(e){diaLastErr=e.message||String(e)}
+const DIRECIONA_FORBIDDEN_PHRASES=[
+  "lembrei de você",
+  "lembrei que",
+  "estive pensando",
+  "fiquei pensando",
+  "faz sentido",
+  "ainda tem interesse",
+  "segue interessado",
+  "passando para saber",
+  "caso não tenha agradado",
+  "qualquer dúvida",
+  "fico à disposição",
+  "estou à disposição"
+];
+const DIRECIONA_MODEL_DIAGNOSTICO=(window.DIRECIONA_MODEL_DIAGNOSTICO||localStorage.getItem('direciona_model_diagnostico')||window.DIRECIONA_MODEL||localStorage.getItem('direciona_model')||'gpt-4o');
+const DIRECIONA_MODEL_RESPOSTAS=(window.DIRECIONA_MODEL_RESPOSTAS||localStorage.getItem('direciona_model_respostas')||window.DIRECIONA_MODEL||localStorage.getItem('direciona_model')||DIRECIONA_MODEL_DIAGNOSTICO);
+
+function onlyJsonInstruction(){
+  return 'Responda APENAS um JSON válido, sem markdown, sem comentários antes ou depois.';
 }
-if(!j)throw new Error(diaLastErr||"Falha ao chamar IA.");
-let txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:"").trim();let parsed;try{parsed=JSON.parse(txt)}catch(e){let m=txt.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0])}if(!parsed)throw new Error("A IA não retornou JSON válido.");return parsed}
-function reading(d){$("analysisLastSpeaker").textContent=d.ultima_pessoa_falou||"—";$("analysisLastCommitment").textContent=d.ultimo_compromisso_cliente||"—";$("analysisPromised").textContent=d.ultima_informacao_prometida||"—";$("analysisMainProduct").textContent=d.produto_principal||"—";$("analysisOtherProducts").textContent=d.produtos_paralelos||"—";$("analysisObjection").textContent=d.principal_objecao||"—";$("analysisFinancial").textContent=d.pendencia_financeira||"—";$("analysisWhoActs").textContent=d.quem_deve_agir||"—";$("analysisFunnelStage").textContent=d.etapa_funil||"—";$("analysisSaleProbability").textContent=d.probabilidade_venda||"—"}
-function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.length){area.innerHTML='<div class="dia-empty">'+esc(empty)+'</div>';return}area.innerHTML=items.map((r,i)=>`<div class="dia-response"><div class="dia-response-head"><div class="dia-response-label">${esc(r.label||("Sugestão "+(i+1)))}</div><button class="dia-copy" type="button" data-copy="${encodeURIComponent(r.texto||"")}">Copiar</button></div><p>${esc(r.texto||"")}</p>${r.dica?`<div class="dia-tip">${esc(r.dica)}</div>`:""}</div>`).join("")}
+function stripAccents(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function parseAIJson(txt){
+  txt=String(txt||'').trim();
+  if(!txt)throw new Error('Resposta vazia da IA.');
+  try{return JSON.parse(txt)}catch(e){}
+  const fenced=txt.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if(fenced){try{return JSON.parse(fenced[1])}catch(e){}}
+  const first=txt.indexOf('{'),last=txt.lastIndexOf('}');
+  if(first>=0&&last>first){return JSON.parse(txt.slice(first,last+1))}
+  throw new Error('A IA não retornou JSON válido.');
+}
+function normalizeListText(v){
+  if(Array.isArray(v))return v.filter(Boolean).join('; ');
+  return String(v||'').trim();
+}
+function normalizeDirecionaResult(d){
+  d=d&&typeof d==='object'?d:{};
+  const estrategia=d.estrategia_comercial||d.raciocinio_comercial||d.camada_estrategica||{};
+  const prob=d.probabilidade_de_venda||d.probabilidade||d.nivel_interesse||'';
+  const etapa=d.etapa_do_funil||d.etapa_comercial||'';
+  const principal=d.produto_principal||'';
+  const obj=d.principal_objecao||d.objecao||d.objeção||'';
+  const pend=d.pendencia_financeira||d.pendência_financeira||'';
+  const agir=d.quem_deve_agir_agora||d.proxima_acao_de||d.proximo_passo_de||'';
+  const ret=Array.isArray(d.retomadas)?d.retomadas:(Array.isArray(d.sugestoes)?d.sugestoes:(Array.isArray(d.sugestões)?d.sugestões:[]));
+  return {
+    situacao:String(d.situacao||d.diagnostico_curto||d.diagnóstico_curto||estrategia.resumo||'Análise comercial concluída.').trim(),
+    temperatura:String(d.temperatura||mapInterestToHeat(prob)||'—').trim(),
+    perfil:String(d.perfil||d.perfil_cliente||d.objetivo_real_cliente||estrategia.objetivo_real_cliente||'—').trim(),
+    risco:String(d.risco||d.risco_comercial||estrategia.risco||'—').trim(),
+    objetivo:String(d.objetivo||d.objetivo_da_retomada||estrategia.melhor_estrategia_agora||'—').trim(),
+    proximo_passo:String(d.proximo_passo||d.próximo_passo||estrategia.proximo_movimento||estrategia.melhor_estrategia_agora||'—').trim(),
+    evitar:String(d.evitar||d.erro_a_evitar||estrategia.erro_que_o_corretor_nao_pode_cometer||'').trim(),
+    ultimo_falante:String(d.ultimo_falante||d.último_falante||d.ultima_pessoa_a_falar||'indefinido').trim(),
+    ultimo_compromisso_cliente:String(d.ultimo_compromisso_cliente||d.último_compromisso_cliente||'').trim(),
+    informacao_prometida:String(d.informacao_prometida||d.informação_prometida||d.ultima_informacao_prometida||'').trim(),
+    produto_principal:String(principal||'').trim(),
+    produtos_paralelos:normalizeListText(d.produtos_paralelos||d.produtos_secundarios||d.produtos_secundários||''),
+    objecao:String(obj||'Sem objeção explícita.').trim(),
+    pendencia_financeira:String(pend||'Não há pendência financeira.').trim(),
+    proxima_acao_de:String(agir||'indefinido').trim(),
+    etapa_comercial:String(etapa||'interesse').trim(),
+    nivel_interesse:String(prob||d.nivel_interesse||'Médio').trim(),
+    justificativa:String(d.justificativa||d.motivo||estrategia.justificativa||'').trim(),
+    raciocinio_comercial:estrategia,
+    respostas:Array.isArray(d.respostas)?d.respostas:[],
+    retomadas:ret.map((r,i)=>({
+      label:String(r.label||r.titulo||r.título||['Principal','Direta','Consultiva'][i]||('Opção '+(i+1))).trim(),
+      texto:String(r.texto||r.mensagem||r.resposta||'').trim(),
+      dica:String(r.dica||r.porque_funciona||r.por_que_funciona||r.justificativa||'').trim()
+    })).filter(r=>r.texto)
+  };
+}
+function mapInterestToHeat(v){
+  v=stripAccents(v);
+  if(v.includes('muito alta')||v.includes('alta'))return 'Quente';
+  if(v.includes('media')||v.includes('morna'))return 'Morno';
+  if(v.includes('baixa')||v.includes('fria'))return 'Frio';
+  return '';
+}
+async function buildDirecionaContext(){
+  let msg=($('clientMessage')?.value||'').trim();
+  if(!msg&&!historyFiles.length&&!lastFile){alert('Cole uma observação, anexe contexto ou a última conversa.');status('Falta mensagem, contexto ou última conversa.');return null}
+  const content=[{type:'text',text:'Observação do corretor:\n'+(msg||'Sem observação.')+'\n\nArquivos de contexto são histórico. A última conversa e o texto colado devem ser lidos integralmente e têm prioridade para definir o próximo passo real.'}];
+  for(let f of historyFiles){await addFileToContent(content,f,'PRINT/ARQUIVO DE CONTEXTO')}
+  if(lastFile){await addFileToContent(content,lastFile,'ÚLTIMA CONVERSA / PRIORIDADE MÁXIMA')}
+  return content;
+}
+function direBasePrompt(){
+  return `Você é um especialista comercial em vendas imobiliárias e atua como gerente comercial experiente de construtora.
+Sua função NÃO é resumir conversas. Sua função é entender o contexto comercial completo de uma conversa de WhatsApp entre corretor e cliente e decidir o melhor próximo movimento para aumentar a chance de venda.
+
+Leia TODA a conversa, do início ao fim, incluindo textos, áudios transcritos, observações e documentos. Nunca analise apenas as últimas mensagens.
+
+REGRAS FIXAS:
+- Não invente informações.
+- Nunca suponha objeções que o cliente não demonstrou.
+- Nunca faça perguntas que já foram respondidas.
+- Considere todo o histórico antes de responder.
+- Descubra quem ficou responsável pelo próximo passo.
+- Continue exatamente de onde a conversa parou.
+- Se existe compromisso aberto do cliente, use isso como gancho.
+- Se o cliente falou no plural, escreva no plural.
+- Não invente pendência financeira quando ela não apareceu.
+- Não sugira proposta, simulação ou negociação se o próximo movimento real for visita.
+- As mensagens devem parecer de corretor experiente, não de robô.
+- Jamais usar: "lembrei de você", "lembrei que", "estive pensando", "fiquei pensando", "faz sentido", "ainda tem interesse?", "segue interessado?", "passando para saber", "caso não tenha agradado", "qualquer dúvida", "fico à disposição".
+- Evite retomadas genéricas. A resposta precisa nascer da última pendência real.`;
+}
+function diagnosticoPrompt(){
+  return `${direBasePrompt()}
+
+CAMADA DE RACIOCÍNIO COMERCIAL OBRIGATÓRIA:
+Antes de sugerir qualquer mensagem, responda internamente com precisão:
+1. Qual era o objetivo real do cliente?
+2. Esse objetivo mudou durante a conversa?
+3. O que está impedindo a venda hoje?
+4. O cliente esfriou ou apenas ficou aguardando?
+5. Existe algum compromisso quebrado ou aberto?
+6. Existe alguma oportunidade comercial que o corretor não percebeu?
+7. Existe alguma informação importante que nunca foi explorada?
+8. A melhor estratégia agora é perguntar, informar, convidar para visita, negociar, simular proposta ou esperar?
+9. Qual erro o corretor não pode cometer neste lead?
+10. Qual gancho exato deve ser usado na retomada?
+
+Identifique também obrigatoriamente:
+- última pessoa a falar;
+- último compromisso do cliente;
+- última informação prometida pelo corretor;
+- produto principal;
+- produtos paralelos;
+- principal objeção, ou "Sem objeção explícita.";
+- pendência financeira, ou "Não há pendência financeira.";
+- quem deve agir agora, com motivo;
+- etapa do funil: descoberta, interesse, comparação, visita, análise financeira, negociação, decisão ou pós-venda;
+- probabilidade de venda: muito baixa, baixa, média, alta ou muito alta, com justificativa.
+
+${onlyJsonInstruction()}
+Formato obrigatório:
+{
+  "situacao":"diagnóstico comercial em 1 frase, específico para esta conversa",
+  "temperatura":"Frio|Morno|Quente",
+  "perfil":"perfil do cliente e motivo comercial",
+  "risco":"Baixo|Médio|Alto + motivo",
+  "objetivo":"objetivo imediato do próximo contato",
+  "proximo_passo":"ação específica do corretor, sem generalidade",
+  "evitar":"erro específico que o corretor deve evitar",
+  "ultimo_falante":"cliente|corretor|indefinido",
+  "ultimo_compromisso_cliente":"último compromisso real assumido pelo cliente, ou 'Nenhum compromisso explícito.'",
+  "informacao_prometida":"última informação/ação prometida pelo corretor, ou 'Nenhuma informação prometida.'",
+  "produto_principal":"produto principal de interesse",
+  "produtos_paralelos":"produtos secundários citados, se houver",
+  "objecao":"objeção real, ou 'Sem objeção explícita.'",
+  "pendencia_financeira":"pendência financeira real, ou 'Não há pendência financeira.'",
+  "proxima_acao_de":"cliente|corretor|indefinido + motivo curto",
+  "etapa_comercial":"descoberta|interesse|comparação|visita|análise financeira|negociação|decisão|pós-venda",
+  "nivel_interesse":"Muito baixa|Baixa|Média|Alta|Muito alta",
+  "justificativa":"por que essa classificação foi escolhida",
+  "raciocinio_comercial":{
+    "objetivo_real_cliente":"...",
+    "objetivo_mudou":"sim|não|indefinido + explicação",
+    "trava_real_hoje":"...",
+    "cliente_esfriou_ou_aguardando":"...",
+    "compromisso_aberto":"...",
+    "oportunidade_nao_percebida":"...",
+    "informacao_nao_explorada":"...",
+    "melhor_estrategia_agora":"perguntar|informar|convidar para visita|negociar|simular proposta|esperar + motivo",
+    "gancho_exato":"frase/assunto da conversa que deve abrir a retomada",
+    "linguagem_cliente":"singular|plural|indefinida"
+  },
+  "respostas":[]
+}`;
+}
+function mensagensPrompt(diagnostico){
+  return `${direBasePrompt()}
+
+Você já recebeu o DIAGNÓSTICO COMERCIAL abaixo. Use-o como verdade operacional, mas confira a conversa para não inventar nada.
+
+DIAGNÓSTICO COMERCIAL:
+${JSON.stringify(diagnostico,null,2)}
+
+Agora gere exatamente 3 mensagens de WhatsApp, cada uma com função diferente:
+1. Principal: natural, equilibrada e com maior chance de resposta.
+2. Direta: mais objetiva e prática.
+3. Consultiva: conduz com um pouco mais de contexto comercial, sem ficar longa.
+
+REGRAS DAS MENSAGENS:
+- Entre 250 e 450 caracteres aproximadamente.
+- Apenas uma pergunta principal por mensagem.
+- Sem emojis.
+- Sem frases proibidas.
+- Não perguntar o que já foi respondido.
+- Não abrir saída fácil.
+- Não pressionar.
+- Continuar do ponto exato em que a conversa parou.
+- Usar o gancho real identificado no diagnóstico.
+- Se o próximo passo for visita, conduzir naturalmente para agendamento.
+- Se existir pendência financeira real, retomar exatamente esse assunto.
+- Se não existir pendência financeira, não falar de entrada, parcelas, financiamento ou simulação.
+- As 3 mensagens precisam ser realmente diferentes entre si, não variações cosméticas.
+
+${onlyJsonInstruction()}
+Formato obrigatório:
+{
+  "situacao":"copie ou refine o diagnóstico em 1 frase",
+  "temperatura":"Frio|Morno|Quente",
+  "perfil":"...",
+  "risco":"...",
+  "objetivo":"...",
+  "proximo_passo":"...",
+  "evitar":"...",
+  "ultimo_falante":"...",
+  "ultimo_compromisso_cliente":"...",
+  "informacao_prometida":"...",
+  "produto_principal":"...",
+  "produtos_paralelos":"...",
+  "objecao":"...",
+  "pendencia_financeira":"...",
+  "proxima_acao_de":"...",
+  "etapa_comercial":"...",
+  "nivel_interesse":"...",
+  "justificativa":"...",
+  "raciocinio_comercial":{},
+  "retomadas":[
+    {"label":"Principal","texto":"mensagem pronta","dica":"por que funciona neste caso específico"},
+    {"label":"Direta","texto":"mensagem pronta","dica":"por que funciona neste caso específico"},
+    {"label":"Consultiva","texto":"mensagem pronta","dica":"por que funciona neste caso específico"}
+  ]
+}`;
+}
+function correcaoPrompt(diagnostico, resposta, problemas){
+  return `${direBasePrompt()}
+
+As mensagens abaixo foram reprovadas pelo validador do Direciona. Corrija sem mudar o diagnóstico comercial.
+
+DIAGNÓSTICO:
+${JSON.stringify(diagnostico,null,2)}
+
+MENSAGENS REPROVADAS:
+${JSON.stringify(resposta,null,2)}
+
+PROBLEMAS ENCONTRADOS:
+${problemas.map((p,i)=>(i+1)+'. '+p).join('\n')}
+
+Reescreva exatamente 3 mensagens. Elas devem corrigir todos os problemas, continuar do ponto exato da conversa e manter o tom de corretor experiente.
+
+${onlyJsonInstruction()}
+Formato obrigatório igual ao anterior, com a chave "retomadas" contendo Principal, Direta e Consultiva.`;
+}
+async function requestDirecionaAI(stage,content,opts){
+  opts=opts||{};
+  const diaPayload={
+    stage,
+    model:opts.model||DIRECIONA_MODEL_DIAGNOSTICO,
+    temperature:opts.temperature??0.22,
+    max_tokens:opts.max_tokens||2600,
+    response_format:{type:'json_object'},
+    messages:[{role:'user',content}]
+  };
+  const diaEndpoints=[];
+  if(window.SB_URL||SB_URL) diaEndpoints.push({url:`${(window.SB_URL||SB_URL)}/functions/v1/direciona-openai`,supabase:true});
+  diaEndpoints.push({url:'https://testecrm-ten.vercel.app/api/direciona-openai',supabase:false});
+  let j=null,diaLastErr='';
+  for(const ep of diaEndpoints){
+    try{
+      const headers={'Content-Type':'application/json'};
+      if(ep.supabase){
+        let authToken=(window.SB_KEY||SB_KEY);try{const ss=await window.AUTH_CLIENT?.auth?.getSession?.();authToken=ss?.data?.session?.access_token||authToken}catch(e){}
+        headers.apikey=(window.SB_KEY||SB_KEY);headers.Authorization='Bearer '+authToken;
+      }
+      let res=await fetch(ep.url,{method:'POST',headers,body:JSON.stringify(diaPayload)});
+      if(!res.ok){diaLastErr=await res.text().catch(()=>('HTTP '+res.status));continue}
+      j=await res.json();break;
+    }catch(e){diaLastErr=e.message||String(e)}
+  }
+  if(!j)throw new Error(diaLastErr||'Falha ao chamar IA.');
+  const txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content?j.choices[0].message.content:'').trim();
+  return parseAIJson(txt);
+}
+async function gerarDiagnosticoComercial(contextContent){
+  const content=[{type:'text',text:diagnosticoPrompt()}].concat(contextContent||[]);
+  const raw=await requestDirecionaAI('diagnostico_comercial',content,{model:DIRECIONA_MODEL_DIAGNOSTICO,temperature:0.18,max_tokens:3200});
+  return normalizeDirecionaResult(raw);
+}
+async function gerarMensagensComerciais(contextContent,diagnostico){
+  const content=[{type:'text',text:mensagensPrompt(diagnostico)}].concat(contextContent||[]);
+  const raw=await requestDirecionaAI('mensagens_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,temperature:0.34,max_tokens:3000});
+  const out=normalizeDirecionaResult(Object.assign({},diagnostico,raw,{raciocinio_comercial:diagnostico.raciocinio_comercial||raw.raciocinio_comercial}));
+  if(!out.retomadas.length&&Array.isArray(raw.retomadas))out.retomadas=raw.retomadas;
+  return out;
+}
+function questionCount(t){return (String(t||'').match(/\?/g)||[]).length}
+function wordSet(t){return new Set(stripAccents(t).replace(/[^a-z0-9áéíóúâêôãõç\s]/gi,' ').split(/\s+/).filter(w=>w.length>3))}
+function jaccard(a,b){a=wordSet(a);b=wordSet(b);if(!a.size||!b.size)return 0;let inter=0;for(const w of a)if(b.has(w))inter++;return inter/(a.size+b.size-inter)}
+function validarRetomadasLocal(diagnostico,resposta){
+  const problemas=[];
+  const ret=(resposta&&Array.isArray(resposta.retomadas))?resposta.retomadas:[];
+  if(ret.length!==3)problemas.push('A IA precisa entregar exatamente 3 sugestões.');
+  const rac=diagnostico.raciocinio_comercial||{};
+  const plural=stripAccents(rac.linguagem_cliente||'').includes('plural');
+  const estrategia=stripAccents((rac.melhor_estrategia_agora||'')+' '+(diagnostico.proximo_passo||'')+' '+(diagnostico.etapa_comercial||''));
+  const semFinanceiro=stripAccents(diagnostico.pendencia_financeira||'').includes('nao ha pendencia financeira');
+  ret.forEach((r,i)=>{
+    const label=r.label||('Opção '+(i+1));
+    const texto=String(r.texto||'').trim();
+    const norm=stripAccents(texto);
+    if(!texto)problemas.push(label+': mensagem vazia.');
+    if(texto.length>520)problemas.push(label+': passou muito de 450 caracteres.');
+    if(texto.length<90)problemas.push(label+': ficou curta demais e provavelmente genérica.');
+    if(questionCount(texto)>1)problemas.push(label+': tem mais de uma pergunta.');
+    DIRECIONA_FORBIDDEN_PHRASES.forEach(p=>{if(norm.includes(stripAccents(p)))problemas.push(label+': usou frase proibida "'+p+'".')});
+    if(plural&&!(/\b(voces|vocês|vcs)\b/i.test(texto)))problemas.push(label+': a conversa indica plural, mas a mensagem não fala com "vocês".');
+    if(estrategia.includes('visita')&&!/(visita|visitar|olhar|conhecer|acompanhar|loteamento|local)/i.test(texto))problemas.push(label+': o próximo passo parece ser visita, mas a mensagem não conduz para isso.');
+    if(semFinanceiro&&/(financiamento|entrada|parcela|parcelas|simulaç|simulac|proposta)/i.test(texto))problemas.push(label+': mencionou financeiro/proposta sem pendência financeira explícita.');
+  });
+  for(let i=0;i<ret.length;i++)for(let j=i+1;j<ret.length;j++)if(jaccard(ret[i].texto,ret[j].texto)>0.72)problemas.push('As opções '+(i+1)+' e '+(j+1)+' estão parecidas demais.');
+  return problemas;
+}
+async function validarOuCorrigirMensagens(contextContent,diagnostico,resposta){
+  let out=normalizeDirecionaResult(Object.assign({},diagnostico,resposta));
+  let problemas=validarRetomadasLocal(diagnostico,out);
+  if(!problemas.length)return out;
+  const content=[{type:'text',text:correcaoPrompt(diagnostico,out,problemas)}].concat(contextContent||[]);
+  const raw=await requestDirecionaAI('validacao_correcao_retomada',content,{model:DIRECIONA_MODEL_RESPOSTAS,temperature:0.28,max_tokens:3000});
+  const corr=normalizeDirecionaResult(Object.assign({},diagnostico,raw,{raciocinio_comercial:diagnostico.raciocinio_comercial}));
+  const problemas2=validarRetomadasLocal(diagnostico,corr);
+  if(problemas2.length){corr.evitar=(corr.evitar?corr.evitar+' | ':'')+'Validador ainda encontrou pontos de atenção: '+problemas2.slice(0,3).join(' ')}
+  return corr;
+}
+async function callOpenAI(mode){
+  const contextContent=await buildDirecionaContext();
+  if(!contextContent)return null;
+  let retomada=mode==='retomada';
+  status(retomada?'Camada 1/3: lendo a conversa e definindo a estratégia comercial...':'Lendo a conversa inteira e montando diagnóstico comercial...');
+  const diagnostico=await gerarDiagnosticoComercial(contextContent);
+  lastAnalysis=diagnostico;
+  if(!retomada)return diagnostico;
+  status('Camada 2/3: escrevendo 3 respostas com base na pendência real...');
+  const resposta=await gerarMensagensComerciais(contextContent,diagnostico);
+  status('Camada 3/3: validando frases proibidas, repetição e coerência comercial...');
+  return await validarOuCorrigirMensagens(contextContent,diagnostico,resposta);
+}
+function reading(d){$("analysisSituation").textContent=d.situacao||"Análise concluída.";$("analysisHeat").textContent=d.temperatura||"—";$("analysisProfile").textContent=d.perfil||"—";$("analysisRisk").textContent=d.risco||"—";$("analysisGoal").textContent=d.objetivo||"—";$("analysisNext").textContent=d.proximo_passo||"—";let a=$("analysisAvoid");if(a&&d.evitar){a.style.display="block";a.textContent="Evitar: "+d.evitar}}
+function cards(id,items,empty){let area=$(id);if(!area)return;if(!items||!items.length){area.innerHTML='<div class="dia-empty">'+esc(empty)+'</div>';return}area.innerHTML=items.map((r,i)=>`<div class="dia-response"><div class="dia-response-head"><div class="dia-response-label">${esc(r.label||("Opção "+(i+1)))}</div><button class="dia-copy" type="button" data-copy="${encodeURIComponent(r.texto||"")}">Copiar</button></div><p>${esc(r.texto||"")}</p>${r.dica?`<div class="dia-tip">${esc(r.dica)}</div>`:""}</div>`).join("")}
 async function analyze(){let btn=$("btnAiAnalyzeMain");try{busy(btn,true,"✨ Analisar conversa");status("Analisando conversa com IA..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Analisando conversa","Lendo prints e extraindo diagnóstico comercial interno."); let d=await callOpenAI("analise");if(!d)return;lastAnalysis=d;reading(d);cards("analysisResponses",[], "Análise interna concluída. Para texto pronto ao cliente, use Gerar retomada.");await window.persistAiResult?.("analise",d,($('clientMessage')?.value||''));status("Análise interna concluída e salva.")}catch(e){console.error(e);alert("Erro na análise: "+(e.message||e));status("Erro na análise.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"✨ Analisar conversa")}}
 async function retomada(){let btn=$("btnRetomadaMain");try{busy(btn,true,"🔁 Gerar retomada");status("Gerando retomada com prioridade para a última conversa..."); if(typeof window.showAiLoading==='function') window.showAiLoading("Gerando retomada","Criando uma mensagem de reabertura baseada na última conversa."); let d=await callOpenAI("retomada");if(!d)return;reading(d);cards("retomadaOutput",d.retomadas,"Sem retomadas retornadas.");await window.persistAiResult?.("retomada",d,($('clientMessage')?.value||''));status("Retomada gerada e salva.")}catch(e){console.error(e);alert("Erro na retomada: "+(e.message||e));status("Erro na retomada.")}finally{if(typeof window.hideAiLoading==='function') window.hideAiLoading();busy(btn,false,"🔁 Gerar retomada")}}
 function clearAll(){historyFiles=[];lastFile=null;lastAnalysis=null;if($("clientMessage"))$("clientMessage").value="";if($("historyPrintInput"))$("historyPrintInput").value="";if($("lastPrintInput"))$("lastPrintInput").value="";counts();status("Aguardando mensagem, contexto ou última conversa.");$("analysisLastSpeaker").textContent="Cole uma mensagem ou anexe prints.";$("analysisLastCommitment").textContent="—";$("analysisPromised").textContent="—";$("analysisMainProduct").textContent="—";$("analysisOtherProducts").textContent="—";$("analysisObjection").textContent="—";$("analysisFinancial").textContent="—";$("analysisWhoActs").textContent="—";$("analysisFunnelStage").textContent="—";$("analysisSaleProbability").textContent="—";$("analysisResponses").innerHTML='<div class="dia-empty">A análise aparecerá aqui.</div>';$("retomadaOutput").innerHTML='<div class="dia-empty">A retomada aparecerá aqui.</div>'}
