@@ -1999,6 +1999,7 @@ async function transcribeAudioBuffer(name,buffer){
   if(window.SB_URL) endpoints.push(`${window.SB_URL}/functions/v1/direciona-transcrever-audio`);
   if(window.SB_URL) endpoints.push(`${window.SB_URL}/functions/v1/direciona-audio-transcribe`);
   endpoints.push("./api/transcrever-audio");
+  endpoints.push("https://testecrm-ten.vercel.app/api/transcrever-audio");
   let lastErr="";
   for(const url of endpoints){
     try{
